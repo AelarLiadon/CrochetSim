@@ -8,3 +8,13 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Local exploration and generated output
+scratch/
+renders/
+
+# 3D model files
+*.stl
+*.obj
+*.gexf
+*.mtl
