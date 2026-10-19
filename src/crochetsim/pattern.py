@@ -6,6 +6,16 @@ from enum import Enum
 import networkx as nx
 import numpy as np
 
+__all__ = [
+    "Pattern",
+    "Row",
+    "RowError",
+    "Stitch",
+    "StitchGraph",
+    "StitchKind",
+    "ValidationReport",
+]
+
 
 class StitchKind(Enum):
     """The three stitch types, with their production and consumption counts."""
@@ -90,12 +100,17 @@ class Stitch:
             raise ValueError(f"invalid stitch representation: {token!r}")
         return [cls.parse(token)]
 
-@dataclass
+@dataclass(frozen=True)
 class Row:
-    """One row of a pattern: an ordered list of stitches."""
+    """One row of a pattern: an ordered sequence of stitches."""
 
     index: int
-    stitches: list[Stitch] = field(default_factory=list)
+    stitches: tuple[Stitch, ...] = ()
+
+    def __post_init__(self) -> None:
+        # Accept any sequence, store a tuple.  Frozen and hashable, so it cannot
+        # change under a StitchGraph that has cached a reference to it.
+        object.__setattr__(self, "stitches", tuple(self.stitches))
 
     @property
     def stitch_count(self) -> int:
@@ -158,21 +173,42 @@ class ValidationReport:
 
 
 class Pattern:
-    """A crochet pattern: a name and a list of :class:`Row`.
+    """A crochet pattern: a name and a sequence of :class:`Row`.
+
+    Immutable: :attr:`name` and :attr:`rows` are read-only, so a pattern handed to
+    :meth:`to_graph`, the solver and the certifier cannot change identity
+    mid-pipeline.  Build a different one with :meth:`from_text` or
+    :meth:`from_rows`.
 
     Parses from and renders back to ``Row N [X st]: a, b, c`` text.  Row headers
     are recomputed rather than read, so stale counts in the source are ignored.
     """
 
     def __init__(self, name: str = "", rows: Sequence[Row] | None = None):
-        self.name = name
-        self.rows: list[Row] = list(rows) if rows else []
+        self._name = name
+        self._rows: tuple[Row, ...] = tuple(rows) if rows else ()
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def rows(self) -> tuple[Row, ...]:
+        return self._rows
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Pattern):
+            return NotImplemented
+        return (self._name, self._rows) == (other._name, other._rows)
+
+    def __hash__(self) -> int:
+        return hash((self._name, self._rows))
 
     # -- construction ------------------------------------------------------
     @classmethod
     def from_text(cls, text: str, name: str = "") -> "Pattern":
         """Parse ``Row N [X st]: a, b, c`` lines.  Labels are not trusted."""
-        pattern = cls(name)
+        rows: list[Row] = []
         for line in text.split("\n"):
             if ":" not in line:
                 continue
@@ -180,8 +216,8 @@ class Pattern:
             stitches: list[Stitch] = []
             for token in body.split(","):
                 stitches.extend(Stitch.parse_many(token))
-            pattern.rows.append(Row(len(pattern.rows), stitches))
-        return pattern
+            rows.append(Row(len(rows), stitches))
+        return cls(name, rows)
 
     @classmethod
     def from_rows(cls, rows: Sequence[Sequence[Stitch]], name: str = "") -> "Pattern":
