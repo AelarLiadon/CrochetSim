@@ -15,6 +15,21 @@ dependencies = [
     "scipy>=1.11",
 ]
 
+[project.optional-dependencies]
+view = ["matplotlib>=3.7", "plotly>=5.18"]
+dev = [
+    "crochetsim[view]",
+    "pytest>=8",
+    "pytest-cov",
+    "import-linter>=2",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "build",
+    "twine",
+]
+docs = ["mkdocs-material>=9", "mkdocstrings[python]>=0.25"]
+all = ["crochetsim[view,dev,docs]"]
+
 # [project.urls] - add the real repository URL before publishing.
 
 [tool.hatch.version]
