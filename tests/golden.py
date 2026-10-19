@@ -14,10 +14,10 @@ asserted exactly.
 
 from dataclasses import dataclass
 
-from embedding import SolverConfig, UnitEdgeSolver
-from example_patterns import by_key
-from metrics import Certificate, Certifier
-from pattern import Pattern, StitchGraph
+from crochetsim.embedding import SolverConfig, UnitEdgeSolver
+from crochetsim.examples import by_key
+from crochetsim.metrics import Certificate, Certifier
+from crochetsim.pattern import Pattern, StitchGraph
 
 SEED = 3
 

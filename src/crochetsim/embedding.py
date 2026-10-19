@@ -60,8 +60,8 @@ import numpy as np
 import scipy.sparse as sp
 from scipy.optimize import least_squares
 
-from metrics import Certificate, Certifier, edge_lengths
-from pattern import StitchGraph
+from .metrics import Certificate, Certifier, edge_lengths
+from .pattern import StitchGraph
 
 __all__ = [
     "DEFAULT_ANCHOR_MU",

@@ -13,7 +13,7 @@ from typing import ClassVar
 
 import numpy as np
 
-from pattern import StitchGraph
+from .pattern import StitchGraph
 
 __all__ = [
     "Camera",
@@ -548,7 +548,7 @@ class Viewer:
     # -- measurement -------------------------------------------------------
     def detector(self):
         if self._detector is None:
-            from metrics import SelfIntersectionDetector
+            from .metrics import SelfIntersectionDetector
             self._detector = SelfIntersectionDetector()
         return self._detector
 

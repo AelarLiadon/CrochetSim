@@ -2,11 +2,11 @@
 
 import pytest
 
-from embedding import SolverConfig, UnitEdgeSolver
-from example_patterns import keys
+from crochetsim.embedding import SolverConfig, UnitEdgeSolver
+from crochetsim.examples import keys
 from golden import GOLDEN, pattern_for, solve
-from metrics import Verdict
-from pattern import StitchGraph
+from crochetsim.metrics import Verdict
+from crochetsim.pattern import StitchGraph
 
 
 def test_every_golden_row_is_a_catalogue_pattern():

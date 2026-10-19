@@ -13,7 +13,7 @@ import networkx as nx
 import numpy as np
 from scipy.spatial import cKDTree
 
-from pattern import StitchGraph
+from .pattern import StitchGraph
 
 __all__ = [
     "DEFAULT_CLEAN_GAP",
