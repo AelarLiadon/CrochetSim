@@ -582,7 +582,7 @@ class Viewer:
         if mark_close <= 0:
             return None
         x = graph.positions if x is None else np.asarray(x, dtype=float)
-        report = self.detector().proximity(x, graph, thresholds=(mark_close,))
+        report = self.detector().proximity(graph, x, thresholds=(mark_close,))
         return OverlapHighlight.from_report(report, mark_close)
 
     def scene(self, graph: StitchGraph, mark_close: float = 0.0,

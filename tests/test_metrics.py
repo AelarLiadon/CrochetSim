@@ -3,6 +3,7 @@
 import numpy as np
 import pytest
 
+from crochetsim._errors import MissingPositionsError
 from crochetsim.metrics import (
     DEFAULT_CLEAN_GAP,
     Certifier,
@@ -55,7 +56,7 @@ def test_edge_lengths_are_per_edge_norms():
 
 def test_proximity_measures_the_gap_between_disjoint_edges():
     graph, x = two_edges(0.5)
-    report = SelfIntersectionDetector().proximity(x, graph)
+    report = SelfIntersectionDetector().proximity(graph, x)
 
     assert report.min_dist == pytest.approx(0.5, abs=1e-9)
     assert report.counts[0.8] == 1     # the pair sits below 0.8
@@ -63,13 +64,24 @@ def test_proximity_measures_the_gap_between_disjoint_edges():
     assert report.has_overlap()
 
 
+def test_proximity_defaults_to_the_graph_positions():
+    graph, x = two_edges(0.5)
+
+    with pytest.raises(MissingPositionsError):
+        SelfIntersectionDetector().proximity(graph)
+
+    graph.positions = x
+    report = SelfIntersectionDetector().proximity(graph)
+    assert report.min_dist == pytest.approx(0.5, abs=1e-9)
+
+
 def test_close_pairs_lists_only_pairs_below_the_smallest_threshold():
     """``close_pairs`` is keyed to the smallest threshold, not to ``clean_gap``."""
     graph, x = two_edges(0.5)
-    assert SelfIntersectionDetector().proximity(x, graph).close_pairs.shape == (0, 2)
+    assert SelfIntersectionDetector().proximity(graph, x).close_pairs.shape == (0, 2)
 
     graph, x = two_edges(0.4)
-    report = SelfIntersectionDetector().proximity(x, graph)
+    report = SelfIntersectionDetector().proximity(graph, x)
     assert report.counts[0.5] == 1
     assert report.close_pairs.shape == (1, 2)
     assert report.close_pairs[0].tolist() == [0, 1]
@@ -82,7 +94,7 @@ def test_proximity_ignores_edges_that_share_a_vertex():
     x = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
                   [1.0, 1.0, 0.0], [1.0, 2.0, 0.0]])
 
-    report = SelfIntersectionDetector().proximity(x, joined)
+    report = SelfIntersectionDetector().proximity(joined, x)
 
     assert not report.has_overlap()
     assert report.min_dist == pytest.approx(1.0, abs=0.05)  # shared vertices excluded
@@ -91,7 +103,7 @@ def test_proximity_ignores_edges_that_share_a_vertex():
 
 def test_thresholds_are_the_count_keys():
     graph, x = two_edges(0.4)
-    report = SelfIntersectionDetector().proximity(x, graph, thresholds=(0.3, 0.9))
+    report = SelfIntersectionDetector().proximity(graph, x, thresholds=(0.3, 0.9))
 
     assert report.thresholds == (0.3, 0.9)
     assert set(report.counts) == {0.3, 0.9}

@@ -91,7 +91,7 @@ def test_a_clean_embedding_highlights_nothing(solved):
 def test_highlight_edges_are_the_proximity_close_pairs(solved):
     """The renderer must not measure anything the certifier would not."""
     viewer = Viewer()
-    report = viewer.detector().proximity(solved.positions, solved, thresholds=(0.9,))
+    report = viewer.detector().proximity(solved, solved.positions, thresholds=(0.9,))
     highlight = viewer.highlight(solved, mark_close=0.9)
 
     expected = np.unique(report.close_pairs.ravel())

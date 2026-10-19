@@ -479,10 +479,27 @@ class SelfIntersectionDetector:
     :meth:`face_intersections` depends on face extraction.
     """
 
-    def proximity(self, x, graph: StitchGraph, faces=None,
-                  thresholds=(0.5, 0.8, 0.95)) -> ProximityReport:
-        return _edge_proximity(x, graph.edge_array(), thresholds=thresholds,
-                               faces=_face_list(faces))
+    def proximity(
+        self,
+        graph: StitchGraph,
+        x=None,
+        faces=None,
+        thresholds=(0.5, 0.8, 0.95),
+    ) -> ProximityReport:
+        """Non-adjacent edge pairs closer than each ``threshold``, in graph order.
+
+        Mirrors :meth:`Certifier.certify`: the graph comes first and ``x``
+        defaults to ``graph.positions``.
+        """
+        if x is None:
+            x = graph.positions
+            if x is None:
+                raise MissingPositionsError(
+                    "graph has no positions; solve it first (UnitEdgeSolver) or pass x="
+                )
+        return _edge_proximity(
+            x, graph.edge_array(), thresholds=thresholds, faces=_face_list(faces)
+        )
 
     def face_intersections(self, x, faces, skip_shared_vertex: bool = True) -> IntersectionReport:
         return _face_intersections(x, _face_list(faces) or [], skip_shared_vertex)
@@ -747,7 +764,7 @@ class Certifier:
         d = edge_lengths(x, E)
         thresholds = self.config.thresholds
 
-        prox = self.detector.proximity(x, graph, thresholds=thresholds)
+        prox = self.detector.proximity(graph, x, thresholds=thresholds)
         if faces is None:
             face_set = FaceSet.build(graph)
             all_faces, face_info = face_set.faces, face_set.info
