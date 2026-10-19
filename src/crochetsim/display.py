@@ -5,6 +5,8 @@ model and the face-coloured view.
 """
 
 import math
+import os
+import tempfile
 from abc import ABC, abstractmethod
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
@@ -30,6 +32,21 @@ __all__ = [
     "Viewer",
     "WindowRenderer",
 ]
+
+
+# ---------------------------------------------------------------------------
+# helpers
+# ---------------------------------------------------------------------------
+def _unique_temp_path(suffix: str) -> Path:
+    """A fresh file in the system temp directory.
+
+    ``tempfile.mkstemp`` guarantees the name is unique, so two processes opening a
+    viewer at the same time cannot overwrite each other's HTML - which a fixed
+    ``<tempdir>/crochetsim_viewer.html`` allowed.
+    """
+    handle, name = tempfile.mkstemp(prefix="crochetsim_", suffix=suffix)
+    os.close(handle)
+    return Path(name)
 
 
 # ---------------------------------------------------------------------------
@@ -297,6 +314,8 @@ class Renderer(ABC):
     """Base class for the three output backends.
 
     ``render`` returns the path written, or None when it only opened a window.
+    The file-writing backends require ``path`` explicitly: a library must not drop
+    ``render.png`` into whatever directory the caller happens to be in.
     """
 
     @abstractmethod
@@ -312,8 +331,9 @@ class PngRenderer(Renderer):
     is safe headless.
     """
 
-    def render(self, scene: SceneModel, path="render.png", style=None,
+    def render(self, scene: SceneModel, path, style=None,
                camera=None) -> Path:
+        """Write a PNG to ``path``, creating parent directories as needed."""
         style = style or RenderStyle()
         camera = camera or Camera()
         path = Path(path)
@@ -418,8 +438,9 @@ class HtmlRenderer(Renderer):
         self.width = width
         self.height = height
 
-    def render(self, scene: SceneModel, path="model.html", style=None, camera=None,
+    def render(self, scene: SceneModel, path, style=None, camera=None,
                offline: bool = True, open_browser: bool = False) -> Path:
+        """Write the HTML to ``path``, creating parent directories as needed."""
         fig = self.figure(scene, style, camera)
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -615,7 +636,5 @@ class Viewer:
                 return self.window.render(scene, None, None, camera)
             except ImportError as exc:
                 raise self._missing_view(exc) from exc
-        import tempfile
-        target = (Path(path) if path else
-                  Path(tempfile.gettempdir()) / "crochetdesign_viewer.html")
+        target = Path(path) if path else _unique_temp_path(".html")
         return self.html.render(scene, target, None, camera, open_browser=True)
