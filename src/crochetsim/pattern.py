@@ -47,7 +47,7 @@ class StitchKind(Enum):
         """Split a stitch token into (kind, repeat).  ``"inc2"`` -> (INC, 2)."""
         for kind in cls:
             if token.startswith(kind.value):
-                rest = token[len(kind.value):]
+                rest = token[len(kind.value) :]
                 if rest == "":
                     return kind, 1
                 if rest.isdigit():
@@ -61,6 +61,7 @@ class StitchKind(Enum):
             return cls.parse(token)
         except ValueError:
             return None, None
+
 
 @dataclass(frozen=True)
 class Stitch:
@@ -101,6 +102,7 @@ class Stitch:
                 return [cls.parse(right)] * int(left)
             raise PatternSyntaxError(f"invalid stitch representation: {token!r}")
         return [cls.parse(token)]
+
 
 @dataclass(frozen=True)
 class Row:
@@ -145,6 +147,7 @@ class Row:
     def __iter__(self) -> Iterator[Stitch]:
         return iter(self.stitches)
 
+
 @dataclass(frozen=True)
 class RowError:
     """One problem found by :meth:`Pattern.validate`."""
@@ -181,7 +184,6 @@ class ValidationReport:
 
     def __bool__(self) -> bool:
         return self.ok
-
 
 
 class Pattern:
@@ -270,11 +272,12 @@ class Pattern:
         previous: int | None = None
         for row in self.rows:
             if previous is not None and row.parent_slots != previous:
-                errors.append(RowError(
-                    row.index,
-                    f"works into {row.parent_slots} stitches of a "
-                    f"{previous}-stitch row",
-                ))
+                errors.append(
+                    RowError(
+                        row.index,
+                        f"works into {row.parent_slots} stitches of a {previous}-stitch row",
+                    )
+                )
             previous = row.stitch_count
         return ValidationReport(not errors, errors)
 
@@ -303,18 +306,17 @@ class Pattern:
                     # A one-stitch row is horizontally isolated: it gets no
                     # self-loop, only its vertical parent edge.
                     if length > 1:
-                        graph.add_edge(stitch, stitch + length - 1,
-                                       weight=1 / (2 ** row_index))
+                        graph.add_edge(stitch, stitch + length - 1, weight=1 / (2**row_index))
                 else:
-                    graph.add_edge(stitch, stitch - 1, weight=1 / (2 ** row_index))
+                    graph.add_edge(stitch, stitch - 1, weight=1 / (2**row_index))
                 stitch += 1
 
         # Vertical edges: each stitch works into `consumes()` stitches of the
         # row below, starting at the next unconsumed slot of that row.
-        parent = 0        # first stitch of the row below still unconsumed
-        child = 0         # first stitch of the current row
+        parent = 0  # first stitch of the row below still unconsumed
+        child = 0  # first stitch of the current row
         for row_index, row in enumerate(self.rows):
-            weighting = 1 / (2 ** row_index)
+            weighting = 1 / (2**row_index)
             if row_index == 0:
                 child = row.stitch_count
                 continue
@@ -337,7 +339,6 @@ class Pattern:
                     child += 1
                     parent += 1
         return StitchGraph(graph, rows)
-
 
 
 class StitchGraph:
@@ -396,8 +397,9 @@ class StitchGraph:
         return np.asarray(list(self._graph.edges), dtype=np.int64).reshape(-1, 2)
 
     def edge_weights(self) -> np.ndarray:
-        return np.asarray([d.get("weight", 1.0)
-                           for _, _, d in self._graph.edges(data=True)], dtype=float)
+        return np.asarray(
+            [d.get("weight", 1.0) for _, _, d in self._graph.edges(data=True)], dtype=float
+        )
 
     def to_networkx(self) -> nx.Graph:
         return self._graph

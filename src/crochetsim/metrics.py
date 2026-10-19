@@ -246,8 +246,7 @@ class FaceSet:
         n = graph.n if graph is not None else None
         m = graph.m if graph is not None else None
         chi = (n - m + len(faces)) if (n is not None and m is not None and faces) else None
-        return cls(faces, FaceInfo(n=n, m=m, planar=None, connected=None,
-                                   F=len(faces), chi=chi))
+        return cls(faces, FaceInfo(n=n, m=m, planar=None, connected=None, F=len(faces), chi=chi))
 
     def small(self, max_size: int = 8) -> "FaceSet":
         return FaceSet(_boundary_faces(self.faces or [], max_size), self.info)
@@ -347,8 +346,9 @@ def _edge_proximity(x, edges, thresholds=(0.5, 0.8, 0.95), faces=None) -> Proxim
                 for k in range(len(f)):
                     incidence[frozenset((f[k], f[(k + 1) % len(f)]))].append(fi)
             edge_faces = [set(incidence.get(frozenset(e), ())) for e in edges]
-            keep = np.array([not (edge_faces[a] & edge_faces[b])
-                             for a, b in zip(i, j, strict=True)], dtype=bool)
+            keep = np.array(
+                [not (edge_faces[a] & edge_faces[b]) for a, b in zip(i, j, strict=True)], dtype=bool
+            )
             i, j = i[keep], j[keep]
         d = _seg_seg_dist(P[i], Q[i] - P[i], P[j], Q[j] - P[j]) if len(i) else np.zeros(0)
     else:
@@ -358,8 +358,9 @@ def _edge_proximity(x, edges, thresholds=(0.5, 0.8, 0.95), faces=None) -> Proxim
     return ProximityReport(
         min_dist=float(d.min()) if len(d) else float("inf"),
         counts={float(t): int((d < t).sum()) for t in thresholds},
-        close_pairs=(np.stack([i[close], j[close]], 1) if close.any()
-                     else np.zeros((0, 2), np.int64)),
+        close_pairs=(
+            np.stack([i[close], j[close]], 1) if close.any() else np.zeros((0, 2), np.int64)
+        ),
         n_candidates=int(n_candidates),
         n_tested=len(i),
         thresholds=tuple(float(t) for t in thresholds),
@@ -388,6 +389,7 @@ def _segment_triangle_hit(p0, p1, t0, t1, t2, eps=1e-9):
 
 def _coplanar_triangle_overlap(P, Q, eps=1e-7):
     """2D separating-axis test for coplanar triangles (P, Q are (K, 3, 2))."""
+
     def axes(T):
         e = np.roll(T, -1, axis=1) - T
         a = np.stack([-e[..., 1], e[..., 0]], axis=-1)
@@ -454,8 +456,10 @@ def _face_intersections(x, faces, skip_shared_vertex=True) -> IntersectionReport
                 u = np.cross(n, t)
                 u /= np.linalg.norm(u)
                 v = np.cross(n, u)
+
                 def project(Q):
                     return np.stack([Q @ u, Q @ v], axis=-1)
+
                 hits[np.where(remaining)[0][coplanar]] = _coplanar_triangle_overlap(
                     project(Ar[coplanar]), project(Br[coplanar])
                 )
@@ -574,8 +578,9 @@ def _pca_normals(graph: nx.Graph, x, ring: int = 1):
     x = np.asarray(x, dtype=float).reshape(n, 3)
     neighbours = [np.array(sorted({v for v in graph[u]} | {u})) for u in range(n)]
     if ring >= 2:
-        neighbours = [np.array(sorted({w for v in b for w in graph[v]} | set(b)))
-                      for b in neighbours]
+        neighbours = [
+            np.array(sorted({w for v in b for w in graph[v]} | set(b))) for b in neighbours
+        ]
 
     N = np.zeros((n, 3))
     lam = np.zeros((n, 3))
@@ -639,8 +644,11 @@ class SurfaceMetrics:
             for i in range(len(f)):
                 incidence[frozenset((f[i], f[(i + 1) % len(f)]))].append(fi)
         pairs = [v for v in incidence.values() if len(v) == 2]
-        face_angles = (_angles_between(N[[p[0] for p in pairs]], N[[p[1] for p in pairs]])
-                       if pairs else np.zeros(0))
+        face_angles = (
+            _angles_between(N[[p[0] for p in pairs]], N[[p[1] for p in pairs]])
+            if pairs
+            else np.zeros(0)
+        )
         NN = _node_normals(x, faces, graph.n, N, area)
         E = graph.edge_array()
         node_angles = _angles_between(NN[E[:, 0]], NN[E[:, 1]])
@@ -654,22 +662,27 @@ class SurfaceMetrics:
         return _pca_normals(graph.graph, x, ring=ring)
 
     @staticmethod
-    def normal_variation(graph: StitchGraph, x, ring: int = 1,
-                         thresholds=(20, 30, 45, 60)) -> NormalVariationStats:
+    def normal_variation(
+        graph: StitchGraph, x, ring: int = 1, thresholds=(20, 30, 45, 60)
+    ) -> NormalVariationStats:
         """Normal-field variation over edges, via PCA normals.  ``|cos|`` used."""
         n = graph.n
         N, lam, ok = SurfaceMetrics.pca_normals(graph, x, ring=ring)
         angles = [
             np.degrees(np.arccos(np.clip(abs(np.dot(N[u], N[v])), -1.0, 1.0)))
-            for u, v in graph.graph.edges() if ok[u] and ok[v]
+            for u, v in graph.graph.edges()
+            if ok[u] and ok[v]
         ]
         angles = np.asarray(angles)
-        non_planarity = np.array([
-            np.sqrt(max(lam[u][0], 0.0) / lam[u].sum()) if ok[u] and lam[u].sum() > 0 else 0.0
-            for u in range(n)
-        ])
-        stats = NormalVariationStats(n=n, n_ok=int(ok.sum()), angles=angles,
-                                     nonplanarity_mean=float(non_planarity.mean()))
+        non_planarity = np.array(
+            [
+                np.sqrt(max(lam[u][0], 0.0) / lam[u].sum()) if ok[u] and lam[u].sum() > 0 else 0.0
+                for u in range(n)
+            ]
+        )
+        stats = NormalVariationStats(
+            n=n, n_ok=int(ok.sum()), angles=angles, nonplanarity_mean=float(non_planarity.mean())
+        )
         if angles.size:
             stats.mean = float(angles.mean())
             stats.median = float(np.median(angles))
@@ -711,27 +724,34 @@ class Certificate:
         return self.verdict is Verdict.CLEAN
 
     def describe(self) -> str:
-        """Render the certificate as lines of text.
-        """
+        """Render the certificate as lines of text."""
         c = self.counts
         lines = [
-            (f"n={self.n}  m={self.m}   edges: max|len-1| = {self.max_err:.2e}"
-            f"   sum|len-1| = {self.sum_err:.2e}"),
-            (f"min non-adjacent edge distance = {self.min_nonadjacent:.4f}"
-            f"   (pairs < 0.8: {c.get(0.8, 0)}, < 0.5: {c.get(0.5, 0)},"
-            f" < 0.95: {c.get(0.95, 0)})"),
+            (
+                f"n={self.n}  m={self.m}   edges: max|len-1| = {self.max_err:.2e}"
+                f"   sum|len-1| = {self.sum_err:.2e}"
+            ),
+            (
+                f"min non-adjacent edge distance = {self.min_nonadjacent:.4f}"
+                f"   (pairs < 0.8: {c.get(0.8, 0)}, < 0.5: {c.get(0.5, 0)},"
+                f" < 0.95: {c.get(0.95, 0)})"
+            ),
         ]
         if self.face_intersections is not None:
             chi = self.faces.chi if self.faces else None
             F = self.faces.F if self.faces else None
-            lines.append(f"face intersections = {self.face_intersections}"
-                         f"   Gauss-Bonnet sum/2pi = {self.gauss_bonnet_over_2pi:.6f}"
-                         f"   (chi={chi}, {F} faces)")
+            lines.append(
+                f"face intersections = {self.face_intersections}"
+                f"   Gauss-Bonnet sum/2pi = {self.gauss_bonnet_over_2pi:.6f}"
+                f"   (chi={chi}, {F} faces)"
+            )
         npc = self.normal_pca
         if npc is not None and npc.n_ok:
-            lines.append(f"normal-field variation (deg): mean={npc.mean:.2f}"
-                         f" p99={npc.p99:.2f} max={npc.max:.2f}"
-                         f" frac>45={npc.frac_above.get(45.0, 0.0):.3f}")
+            lines.append(
+                f"normal-field variation (deg): mean={npc.mean:.2f}"
+                f" p99={npc.p99:.2f} max={npc.max:.2f}"
+                f" frac>45={npc.frac_above.get(45.0, 0.0):.3f}"
+            )
         n_close = c.get(float(self.clean_gap), 0)
         verdict = self.verdict.description
         if self.verdict is Verdict.TIGHT:
@@ -771,7 +791,9 @@ class Certifier:
         else:
             all_faces = _face_list(faces)
             face_info = FaceInfo(
-                n=n, m=m, F=len(all_faces) if all_faces else 0,
+                n=n,
+                m=m,
+                F=len(all_faces) if all_faces else 0,
                 chi=(n - m + len(all_faces)) if all_faces else None,
             )
 
@@ -806,8 +828,11 @@ class Certifier:
         # clean_gap are only a *warning*: stitches converging into a sharp tip
         # legitimately sit at 1/sqrt(2) = 0.707 apart, and no unit-edge fabric can
         # do better there.  So report the severity, don't collapse it to a bool.
-        if (cert.max_err >= 1e-6 or cert.min_nonadjacent <= 0.0
-                or cert.face_intersections not in (0, None)):
+        if (
+            cert.max_err >= 1e-6
+            or cert.min_nonadjacent <= 0.0
+            or cert.face_intersections not in (0, None)
+        ):
             cert.verdict = Verdict.DEFECTIVE
         elif cert.counts.get(float(self.config.clean_gap), 0):
             cert.verdict = Verdict.TIGHT

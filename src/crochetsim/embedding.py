@@ -135,8 +135,10 @@ class EmbeddingResult:
         return self.max_err < tol
 
     def describe(self) -> str:
-        return (f"n={len(self.x)}  {self.nfev} nfev  {self.time:.1f}s  "
-                f"max|len-1|={self.max_err:.2e}  rgyr={self.rgyr:.2f}")
+        return (
+            f"n={len(self.x)}  {self.nfev} nfev  {self.time:.1f}s  "
+            f"max|len-1|={self.max_err:.2e}  rgyr={self.rgyr:.2f}"
+        )
 
 
 def _make_edge_functions(e, n):
@@ -165,7 +167,7 @@ def _make_edge_functions(e, n):
         X = np.asarray(x, dtype=float).reshape(n, 3)
         diff = X[src] - X[dst]
         d = np.linalg.norm(diff, axis=1)
-        u = diff / np.maximum(d, 1e-12)[:, None]      # d(|x_u-x_v|)/d(x_u)
+        u = diff / np.maximum(d, 1e-12)[:, None]  # d(|x_u-x_v|)/d(x_u)
         data = np.concatenate([u.ravel(), -u.ravel()])
         return sp.coo_matrix((data, (jrows, jcols)), shape=(m, 3 * n)).tocsr()
 
@@ -179,8 +181,7 @@ def _bending_operator(graph: StitchGraph) -> sp.csr_matrix:
     each node from the mean of its neighbours.
     """
     n = graph.n
-    A = nx.to_scipy_sparse_array(graph.graph, nodelist=range(n),
-                                 format="csr").astype(float)
+    A = nx.to_scipy_sparse_array(graph.graph, nodelist=range(n), format="csr").astype(float)
     deg = np.asarray(A.sum(1)).ravel()
     deg[deg == 0] = 1.0
     return (sp.diags(1.0 / deg) @ A - sp.identity(n, format="csr")).tocsr()
@@ -220,8 +221,7 @@ class UnitEdgeSolver(Solver):
         n = graph.n
         e = graph.edge_array()
         residual, jacobian, _ = _make_edge_functions(e, n)
-        M3 = sp.kron(_bending_operator(graph), sp.identity(3, format="csr"),
-                     format="csr")
+        M3 = sp.kron(_bending_operator(graph), sp.identity(3, format="csr"), format="csr")
 
         if x0 is None:
             rng = np.random.default_rng(cfg.seed)
@@ -235,16 +235,25 @@ class UnitEdgeSolver(Solver):
         def stage(fun, jac):
             nonlocal x, nfev
             res = least_squares(
-                fun, x, jac=jac, method="trf", x_scale="jac",
-                ftol=1e-14, xtol=1e-14, gtol=1e-14, max_nfev=cfg.max_nfev,
+                fun,
+                x,
+                jac=jac,
+                method="trf",
+                x_scale="jac",
+                ftol=1e-14,
+                xtol=1e-14,
+                gtol=1e-14,
+                max_nfev=cfg.max_nfev,
             )
             x = res.x
             nfev += res.nfev
 
         for mu in cfg.mus:
             s = np.sqrt(mu)
-            stage(lambda xx, s=s: np.concatenate([residual(xx), s * (M3 @ xx)]),
-                  lambda xx, s=s: sp.vstack([jacobian(xx), s * M3]).tocsr())
+            stage(
+                lambda xx, s=s: np.concatenate([residual(xx), s * (M3 @ xx)]),
+                lambda xx, s=s: sp.vstack([jacobian(xx), s * M3]).tocsr(),
+            )
 
         x_smooth = x.copy()
         if cfg.polish == "free":
@@ -254,7 +263,8 @@ class UnitEdgeSolver(Solver):
             stage(
                 lambda xx, s=s: np.concatenate([residual(xx), s * (xx - x_smooth)]),
                 lambda xx, s=s: sp.vstack(
-                    [jacobian(xx), s * sp.identity(3 * n, format="csr")]).tocsr(),
+                    [jacobian(xx), s * sp.identity(3 * n, format="csr")]
+                ).tocsr(),
             )
         elif cfg.polish is not None:
             raise ValueError(f"unknown polish mode: {cfg.polish!r}")
@@ -281,8 +291,7 @@ class EmbeddingOptimiser:
     exactness.  Like the solver, it does **not** write to the graph.
     """
 
-    def __init__(self, solver: Solver | None = None,
-                 certifier: Certifier | None = None):
+    def __init__(self, solver: Solver | None = None, certifier: Certifier | None = None):
         self.solver = solver or UnitEdgeSolver()
         self.certifier = certifier or Certifier()
         self.last_seed: int | None = None
@@ -299,16 +308,16 @@ class EmbeddingOptimiser:
         instead would silently ignore it: ``UnitEdgeSolver(SolverConfig(seed=3))``
         followed by ``best(tries=1)`` used to run seed 0.
         """
-        base = (self.solver.config.seed
-                if isinstance(self.solver, UnitEdgeSolver) else 0)
+        base = self.solver.config.seed if isinstance(self.solver, UnitEdgeSolver) else 0
         return [base + i for i in range(tries)]
 
     @staticmethod
     def _rank(result: EmbeddingResult, cert: Certificate) -> tuple:
         return (cert.is_clean(), cert.min_nonadjacent, -result.max_err)
 
-    def best(self, graph: StitchGraph, tries: int = 5,
-             seeds=None) -> tuple[EmbeddingResult, Certificate]:
+    def best(
+        self, graph: StitchGraph, tries: int = 5, seeds=None
+    ) -> tuple[EmbeddingResult, Certificate]:
         seeds = list(seeds) if seeds is not None else self._default_seeds(tries)
         best = None
         for seed in seeds:

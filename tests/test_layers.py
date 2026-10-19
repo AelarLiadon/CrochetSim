@@ -34,15 +34,18 @@ def lint_imports_executable() -> str:
     for candidate in sorted(scripts.glob("lint-imports*")):
         return str(candidate)
     raise AssertionError(
-        "import-linter is not installed; it is part of the dev extra: "
-        "uv sync --extra dev"
+        "import-linter is not installed; it is part of the dev extra: uv sync --extra dev"
     )
 
 
 @pytest.fixture(scope="module")
 def lint_output() -> str:
-    done = subprocess.run([lint_imports_executable(), "--no-cache", "--no-logo"],
-                          cwd=REPO_ROOT, capture_output=True, text=True)
+    done = subprocess.run(
+        [lint_imports_executable(), "--no-cache", "--no-logo"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
     assert done.returncode == 0, f"stdout:\n{done.stdout}\nstderr:\n{done.stderr}"
     return done.stdout
 

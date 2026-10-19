@@ -54,8 +54,7 @@ class Solution:
     # -- presentation ------------------------------------------------------
     # Imported inside the methods, so importing crochetsim never imports
     # matplotlib or plotly.
-    def save_png(self, path, camera=None, mark_close: float = 0.0,
-                 title: str = "") -> Path:
+    def save_png(self, path, camera=None, mark_close: float = 0.0, title: str = "") -> Path:
         """Write a PNG of this solution and remember it in :attr:`artifacts`."""
         from .display import Viewer
 
@@ -63,13 +62,18 @@ class Solution:
         self.artifacts.append(out)
         return out
 
-    def save_html(self, path, camera=None, mark_close: float = 0.0, title: str = "",
-                  open_browser: bool = False) -> Path:
+    def save_html(
+        self,
+        path,
+        camera=None,
+        mark_close: float = 0.0,
+        title: str = "",
+        open_browser: bool = False,
+    ) -> Path:
         """Write the self-contained HTML model of this solution."""
         from .display import Viewer
 
-        out = Viewer().save_html(self.graph, path, camera, mark_close, title,
-                                 open_browser)
+        out = Viewer().save_html(self.graph, path, camera, mark_close, title, open_browser)
         self.artifacts.append(out)
         return out
 
@@ -80,9 +84,13 @@ class Solution:
         return Viewer().show(self.graph, camera, mark_close, title, path)
 
 
-def solve(pattern: str | Pattern, config: SolverConfig | None = None,
-          optimiser: EmbeddingOptimiser | None = None, seed: int | None = None,
-          tries: int = 5) -> Solution:
+def solve(
+    pattern: str | Pattern,
+    config: SolverConfig | None = None,
+    optimiser: EmbeddingOptimiser | None = None,
+    seed: int | None = None,
+    tries: int = 5,
+) -> Solution:
     """Validate, embed and certify a pattern.
 
     Parameters
@@ -107,9 +115,7 @@ def solve(pattern: str | Pattern, config: SolverConfig | None = None,
     if isinstance(pattern, str):
         pattern = Pattern.from_text(pattern)
     if not isinstance(pattern, Pattern):
-        raise TypeError(
-            f"expected pattern text or a Pattern, got {type(pattern).__name__}"
-        )
+        raise TypeError(f"expected pattern text or a Pattern, got {type(pattern).__name__}")
     pattern.validate().raise_if_invalid(pattern.name)
 
     if optimiser is None:
@@ -131,7 +137,6 @@ def solve(pattern: str | Pattern, config: SolverConfig | None = None,
     )
 
 
-def certify(graph: StitchGraph, x=None, certifier: Certifier | None = None
-            ) -> Certificate:
+def certify(graph: StitchGraph, x=None, certifier: Certifier | None = None) -> Certificate:
     """Measure an embedding that has already been solved, without re-solving it."""
     return (certifier or Certifier()).certify(graph, x)

@@ -29,7 +29,7 @@ class Golden:
     key: str
     n: int
     m: int
-    max_err: float          # calibrated value, recorded for reference
+    max_err: float  # calibrated value, recorded for reference
     max_err_ceiling: float  # asserted: comfortably above, still decisive
     min_gap: float
     crossings: int

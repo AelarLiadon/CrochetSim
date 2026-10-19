@@ -40,8 +40,7 @@ def grid_graph(rows: int, cols: int, spacing: float = 1.0):
 
 def two_edges(distance: float):
     """Two disjoint unit edges ``distance`` apart, along +x."""
-    x = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
-                  [0.0, distance, 0.0], [1.0, distance, 0.0]])
+    x = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, distance, 0.0], [1.0, distance, 0.0]])
     return StitchGraph.from_edges(4, [(0, 1), (2, 3)]), x
 
 
@@ -59,8 +58,8 @@ def test_proximity_measures_the_gap_between_disjoint_edges():
     report = SelfIntersectionDetector().proximity(graph, x)
 
     assert report.min_dist == pytest.approx(0.5, abs=1e-9)
-    assert report.counts[0.8] == 1     # the pair sits below 0.8
-    assert report.counts[0.5] == 0     # thresholds are strict: count is d < t
+    assert report.counts[0.8] == 1  # the pair sits below 0.8
+    assert report.counts[0.5] == 0  # thresholds are strict: count is d < t
     assert report.has_overlap()
 
 
@@ -91,8 +90,7 @@ def test_proximity_ignores_edges_that_share_a_vertex():
     """Adjacent edges meet at distance 0 and must not be counted as overlap."""
     graph, _ = two_edges(1.0)
     joined = StitchGraph.from_edges(4, [(0, 1), (1, 2), (2, 3)])
-    x = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0],
-                  [1.0, 1.0, 0.0], [1.0, 2.0, 0.0]])
+    x = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [1.0, 1.0, 0.0], [1.0, 2.0, 0.0]])
 
     report = SelfIntersectionDetector().proximity(joined, x)
 
@@ -119,7 +117,7 @@ def test_faces_of_a_grid_have_euler_characteristic_two():
     face_set = FaceSet.build(graph)
 
     assert face_set.available
-    assert len(face_set) == 17          # 16 quads plus the outer face
+    assert len(face_set) == 17  # 16 quads plus the outer face
     assert face_set.info.chi == 2
     assert face_set.info.planar is True and face_set.info.connected is True
 
@@ -149,7 +147,7 @@ def test_normals_and_variation_on_a_flat_grid():
 
     normals, areas = SurfaceMetrics.face_normals(x, small.faces)
     assert normals.shape == (16, 3) and (areas > 0).all()
-    assert np.abs(normals[:, 2]).min() > 0.99      # the flat grid is z-aligned
+    assert np.abs(normals[:, 2]).min() > 0.99  # the flat grid is z-aligned
 
     stats = SurfaceMetrics.normal_variation(graph, x)
     assert stats.n_ok > 0
@@ -190,7 +188,7 @@ def test_close_but_not_crossing_is_tight():
 def test_coincident_nodes_are_defective():
     graph, x = grid_graph(5, 5)
     x = x.copy()
-    x[12] = x[6]                       # pile one stitch onto another
+    x[12] = x[6]  # pile one stitch onto another
 
     cert = Certifier().certify(graph, x)
 
@@ -200,8 +198,16 @@ def test_coincident_nodes_are_defective():
 
 def test_face_intersections_detects_two_triangles_through_each_other():
     """Direct kernel test: the vertical triangle pierces the horizontal one."""
-    x = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [1.0, 2.0, 0.0],
-                  [1.0, 0.5, -1.0], [1.0, 0.5, 1.0], [0.5, 0.5, 0.0]])
+    x = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [2.0, 0.0, 0.0],
+            [1.0, 2.0, 0.0],
+            [1.0, 0.5, -1.0],
+            [1.0, 0.5, 1.0],
+            [0.5, 0.5, 0.0],
+        ]
+    )
     faces = [[0, 1, 2], [3, 4, 5]]
 
     hit = SelfIntersectionDetector().face_intersections(x, faces)
@@ -209,7 +215,7 @@ def test_face_intersections_detects_two_triangles_through_each_other():
     assert hit.face_pairs.tolist() == [[0, 1]]
 
     apart = x.copy()
-    apart[3:, 1] = 5.0                 # slide the second triangle clear
+    apart[3:, 1] = 5.0  # slide the second triangle clear
     assert SelfIntersectionDetector().face_intersections(apart, faces).crossing_count() == 0
 
 
@@ -220,7 +226,7 @@ def test_a_perturbed_grid_is_defective():
     cert = Certifier().certify(graph, x)
 
     assert cert.verdict is Verdict.DEFECTIVE
-    assert cert.face_intersections is not None   # faces were available and tested
+    assert cert.face_intersections is not None  # faces were available and tested
     assert cert.max_err > 1e-6
 
 

@@ -97,9 +97,7 @@ class OverlapHighlight:
     """
 
     threshold: float = 0.0
-    edge_indices: np.ndarray = field(
-        default_factory=lambda: np.zeros(0, dtype=np.int64)
-    )
+    edge_indices: np.ndarray = field(default_factory=lambda: np.zeros(0, dtype=np.int64))
 
     def active(self) -> bool:
         return int(np.size(self.edge_indices)) > 0
@@ -126,8 +124,7 @@ class OverlapHighlight:
     def describe(self) -> str:
         if not self.active():
             return "no overlaps highlighted"
-        return (f"{self.count} edges closer than {self.threshold:g} to a "
-                f"non-adjacent edge")
+        return f"{self.count} edges closer than {self.threshold:g} to a non-adjacent edge"
 
 
 @dataclass
@@ -141,8 +138,9 @@ class SceneModel:
     title: str = ""
 
     @classmethod
-    def from_graph(cls, graph: StitchGraph, x=None, highlight=None,
-                   title: str = "") -> "SceneModel":
+    def from_graph(
+        cls, graph: StitchGraph, x=None, highlight=None, title: str = ""
+    ) -> "SceneModel":
         """Read coordinates and edges off a :class:`pattern.StitchGraph`.
 
         Coordinates come from ``graph.positions``, indexed by node id, and must
@@ -237,9 +235,10 @@ class MatplotlibBackend:
         else:
             try:
                 import matplotlib.pyplot as plt
+
                 busy = bool(plt.get_fignums())
             except Exception:
-                busy = True          # cannot tell -> do not risk closing anything
+                busy = True  # cannot tell -> do not risk closing anything
             if previous.lower() != "agg" and not busy:
                 try:
                     matplotlib.use("Agg", force=True)
@@ -259,9 +258,10 @@ class MatplotlibBackend:
             if switched:
                 try:
                     import matplotlib.pyplot as plt
+
                     live = bool(plt.get_fignums())
                 except Exception:
-                    live = True          # cannot tell -> do not risk closing anything
+                    live = True  # cannot tell -> do not risk closing anything
                 if not live:
                     with suppress(Exception):
                         matplotlib.use(previous, force=True)
@@ -269,6 +269,7 @@ class MatplotlibBackend:
     @staticmethod
     def available() -> str:
         import matplotlib
+
         return matplotlib.get_backend()
 
 
@@ -319,8 +320,13 @@ class Renderer(ABC):
     """
 
     @abstractmethod
-    def render(self, scene: SceneModel, path=None, style: RenderStyle | None = None,
-               camera: Camera | None = None):
+    def render(
+        self,
+        scene: SceneModel,
+        path=None,
+        style: RenderStyle | None = None,
+        camera: Camera | None = None,
+    ):
         raise NotImplementedError
 
 
@@ -331,8 +337,7 @@ class PngRenderer(Renderer):
     is safe headless.
     """
 
-    def render(self, scene: SceneModel, path, style=None,
-               camera=None) -> Path:
+    def render(self, scene: SceneModel, path, style=None, camera=None) -> Path:
         """Write a PNG to ``path``, creating parent directories as needed."""
         style = style or RenderStyle()
         camera = camera or Camera()
@@ -355,21 +360,29 @@ class PngRenderer(Renderer):
         fig = Figure(figsize=style.figsize)
         ax = fig.add_subplot(111, projection="3d")
 
-        segments = np.stack([scene.x[scene.edges[:, 0]], scene.x[scene.edges[:, 1]]],
-                            axis=1) if scene.m else np.zeros((0, 2, 3))
+        segments = (
+            np.stack([scene.x[scene.edges[:, 0]], scene.x[scene.edges[:, 1]]], axis=1)
+            if scene.m
+            else np.zeros((0, 2, 3))
+        )
         mask = scene.highlight_mask()
         if mask.any():
-            colours = np.where(mask[:, None], np.array([[0.85, 0.1, 0.1, 1.0]]),
-                               np.array([[0.55, 0.55, 0.55, 1.0]]))
+            colours = np.where(
+                mask[:, None],
+                np.array([[0.85, 0.1, 0.1, 1.0]]),
+                np.array([[0.55, 0.55, 0.55, 1.0]]),
+            )
         else:
             depth = segments[:, :, 2].mean(1) if scene.m else np.zeros(0)
             depth = (depth - depth.min()) / max(np.ptp(depth), 1e-9) if scene.m else depth
             colours = matplotlib.colormaps[style.cmap](0.1 + 0.9 * depth)
         if scene.m:
-            ax.add_collection3d(Line3DCollection(segments, colors=colours,
-                                                 linewidths=style.linewidth))
-        ax.scatter(scene.x[:, 0], scene.x[:, 1], scene.x[:, 2], s=3,
-                   c=scene.x[:, 2], cmap=style.cmap)
+            ax.add_collection3d(
+                Line3DCollection(segments, colors=colours, linewidths=style.linewidth)
+            )
+        ax.scatter(
+            scene.x[:, 0], scene.x[:, 1], scene.x[:, 2], s=3, c=scene.x[:, 2], cmap=style.cmap
+        )
         EqualAxes.apply(ax, scene.x)
         ax.view_init(elev=camera.elev, azim=camera.azim)
         ax.set_axis_off()
@@ -395,22 +408,25 @@ class WindowRenderer(Renderer):
             ax = fig.add_subplot(111, projection="3d")
 
             if scene.m:
-                segments = np.stack([scene.x[scene.edges[:, 0]],
-                                     scene.x[scene.edges[:, 1]]], axis=1)
+                segments = np.stack(
+                    [scene.x[scene.edges[:, 0]], scene.x[scene.edges[:, 1]]], axis=1
+                )
                 mask = scene.highlight_mask()
                 if mask.any():
-                    colours = np.where(mask[:, None],
-                                       np.array([[0.85, 0.1, 0.1, 1.0]]),
-                                       np.array([[0.6, 0.6, 0.6, 1.0]]))
+                    colours = np.where(
+                        mask[:, None],
+                        np.array([[0.85, 0.1, 0.1, 1.0]]),
+                        np.array([[0.6, 0.6, 0.6, 1.0]]),
+                    )
                     widths = np.where(mask, 1.5, 0.5)
                 else:
                     depth = segments[:, :, 2].mean(1)
                     depth = (depth - depth.min()) / max(np.ptp(depth), 1e-9)
                     colours, widths = plt.cm.viridis(0.1 + 0.9 * depth), style.linewidth
-                ax.add_collection3d(Line3DCollection(segments, colors=colours,
-                                                     linewidths=widths))
-            ax.scatter(scene.x[:, 0], scene.x[:, 1], scene.x[:, 2], s=4,
-                       c=scene.x[:, 2], cmap=style.cmap)
+                ax.add_collection3d(Line3DCollection(segments, colors=colours, linewidths=widths))
+            ax.scatter(
+                scene.x[:, 0], scene.x[:, 1], scene.x[:, 2], s=4, c=scene.x[:, 2], cmap=style.cmap
+            )
             EqualAxes.apply(ax, scene.x)
             ax.view_init(elev=camera.elev, azim=camera.azim)
             ax.set_axis_off()
@@ -438,8 +454,15 @@ class HtmlRenderer(Renderer):
         self.width = width
         self.height = height
 
-    def render(self, scene: SceneModel, path, style=None, camera=None,
-               offline: bool = True, open_browser: bool = False) -> Path:
+    def render(
+        self,
+        scene: SceneModel,
+        path,
+        style=None,
+        camera=None,
+        offline: bool = True,
+        open_browser: bool = False,
+    ) -> Path:
         """Write the HTML to ``path``, creating parent directories as needed."""
         fig = self.figure(scene, style, camera)
         path = Path(path)
@@ -447,11 +470,15 @@ class HtmlRenderer(Renderer):
         fig.write_html(
             str(path),
             include_plotlyjs=True if offline else "cdn",
-            config={"scrollZoom": True, "displaylogo": False,
-                        "toImageButtonOptions": {"format": "png", "scale": 2}},
+            config={
+                "scrollZoom": True,
+                "displaylogo": False,
+                "toImageButtonOptions": {"format": "png", "scale": 2},
+            },
         )
         if open_browser:
             import webbrowser
+
             # as_uri() gives file:///C:/... ; string concatenation produced
             # file://C:\... which browsers do not reliably resolve on Windows.
             webbrowser.open(path.resolve().as_uri())
@@ -468,17 +495,31 @@ class HtmlRenderer(Renderer):
         if len(close):
             f = scene.segments(close)
             label = scene.highlight.describe() if scene.highlight else f"{len(close)} edges"
-            traces.append(go.Scatter3d(
-                x=f[:, 0], y=f[:, 1], z=f[:, 2], mode="lines",
-                line={"color": style.overlap_color, "width": 4},
-                name=label, hoverinfo="skip"))
+            traces.append(
+                go.Scatter3d(
+                    x=f[:, 0],
+                    y=f[:, 1],
+                    z=f[:, 2],
+                    mode="lines",
+                    line={"color": style.overlap_color, "width": 4},
+                    name=label,
+                    hoverinfo="skip",
+                )
+            )
 
         if len(normal):
             f = scene.segments(normal)
-            traces.append(go.Scatter3d(
-                x=f[:, 0], y=f[:, 1], z=f[:, 2], mode="lines",
-                line={"color": style.edge_color, "width": 1.6},
-                name=f"{len(normal)} unit edges", hoverinfo="skip"))
+            traces.append(
+                go.Scatter3d(
+                    x=f[:, 0],
+                    y=f[:, 1],
+                    z=f[:, 2],
+                    mode="lines",
+                    line={"color": style.edge_color, "width": 1.6},
+                    name=f"{len(normal)} unit edges",
+                    hoverinfo="skip",
+                )
+            )
 
         centre = scene.x.mean(0)
         radius = scene.radius
@@ -491,26 +532,55 @@ class HtmlRenderer(Renderer):
             + (f"<br>row {int(scene.node_rows[i])}" if scene.node_rows is not None else "")
             for i in range(scene.n)
         ]
-        traces.append(go.Scatter3d(
-            x=scene.x[:, 0], y=scene.x[:, 1], z=scene.x[:, 2], mode="markers",
-            marker={"size": style.node_size, "color": colour, "colorscale": "Viridis",
-                        "showscale": True, "line": {"width": 0},
-                        "colorbar": {"title": {"text": cbar, "side": "right"},
-                                      "thickness": 14, "len": 0.6, "x": 0.92}},
-            text=text, hovertemplate="%{text}<extra></extra>",
-            name=f"{scene.n} stitches"))
+        traces.append(
+            go.Scatter3d(
+                x=scene.x[:, 0],
+                y=scene.x[:, 1],
+                z=scene.x[:, 2],
+                mode="markers",
+                marker={
+                    "size": style.node_size,
+                    "color": colour,
+                    "colorscale": "Viridis",
+                    "showscale": True,
+                    "line": {"width": 0},
+                    "colorbar": {
+                        "title": {"text": cbar, "side": "right"},
+                        "thickness": 14,
+                        "len": 0.6,
+                        "x": 0.92,
+                    },
+                },
+                text=text,
+                hovertemplate="%{text}<extra></extra>",
+                name=f"{scene.n} stitches",
+            )
+        )
 
-        axis = {"showbackground": True, "backgroundcolor": "#101216",
-                    "gridcolor": "#2a2f38", "zerolinecolor": "#2a2f38",
-                    "showticklabels": False, "title": ""}
+        axis = {
+            "showbackground": True,
+            "backgroundcolor": "#101216",
+            "gridcolor": "#2a2f38",
+            "zerolinecolor": "#2a2f38",
+            "showticklabels": False,
+            "title": "",
+        }
         fig = go.Figure(data=traces)
         fig.update_layout(
             title={"text": scene.title, "x": 0.01, "y": 0.97, "font": {"size": 13}},
-            scene={"xaxis": axis, "yaxis": axis, "zaxis": axis, "aspectmode": "data",
-                       "camera": {"eye": camera.eye()}},
-            paper_bgcolor=style.background, font={"color": "#c9d1d9", "size": 11},
+            scene={
+                "xaxis": axis,
+                "yaxis": axis,
+                "zaxis": axis,
+                "aspectmode": "data",
+                "camera": {"eye": camera.eye()},
+            },
+            paper_bgcolor=style.background,
+            font={"color": "#c9d1d9", "size": 11},
             legend={"x": 0.01, "y": 0.01, "bgcolor": "rgba(0,0,0,0.5)", "font": {"size": 10}},
-            margin={"l": 0, "r": 0, "t": 52, "b": 0}, width=self.width, height=self.height,
+            margin={"l": 0, "r": 0, "t": 52, "b": 0},
+            width=self.width,
+            height=self.height,
         )
         return fig
 
@@ -522,12 +592,12 @@ class FaceRenderer:
     number of faces drawn.
     """
 
-    def draw(self, graph: StitchGraph, faces, camera=None, max_size: int = 8,
-             title: str = "") -> int:
+    def draw(
+        self, graph: StitchGraph, faces, camera=None, max_size: int = 8, title: str = ""
+    ) -> int:
         x = graph.positions
         if x is None:
-            raise MissingPositionsError(
-                "graph has no positions; solve it before drawing faces")
+            raise MissingPositionsError("graph has no positions; solve it before drawing faces")
         face_list = list(getattr(faces, "faces", faces))
         face_list = [f for f in face_list if 3 <= len(f) <= max_size]
         if not face_list:
@@ -544,8 +614,7 @@ class FaceRenderer:
             fig = plt.figure()
             ax = fig.add_subplot(projection="3d")
             colours = plt.cm.viridis(plt.Normalize(heights.min(), heights.max())(heights))
-            ax.add_collection(Poly3DCollection(polys, facecolors=colours,
-                                               edgecolor="black"))
+            ax.add_collection(Poly3DCollection(polys, facecolors=colours, edgecolor="black"))
             EqualAxes.apply(ax, x)
             ax.view_init(elev=camera.elev, azim=camera.azim)
             ax.set_axis_off()
@@ -571,11 +640,13 @@ class Viewer:
     def detector(self):
         if self._detector is None:
             from .metrics import SelfIntersectionDetector
+
             self._detector = SelfIntersectionDetector()
         return self._detector
 
-    def highlight(self, graph: StitchGraph, x=None, mark_close: float = 0.0
-                  ) -> OverlapHighlight | None:
+    def highlight(
+        self, graph: StitchGraph, x=None, mark_close: float = 0.0
+    ) -> OverlapHighlight | None:
         """Edges taking part in a non-adjacent pair closer than ``mark_close``,
         or None when ``mark_close`` is 0.
         """
@@ -585,8 +656,7 @@ class Viewer:
         report = self.detector().proximity(graph, x, thresholds=(mark_close,))
         return OverlapHighlight.from_report(report, mark_close)
 
-    def scene(self, graph: StitchGraph, mark_close: float = 0.0,
-              title: str = "") -> SceneModel:
+    def scene(self, graph: StitchGraph, mark_close: float = 0.0, title: str = "") -> SceneModel:
         x = graph.positions
         if x is None:
             raise MissingPositionsError(
@@ -594,8 +664,7 @@ class Viewer:
                 "result = embedding.UnitEdgeSolver().solve(graph); "
                 "graph.positions = result.x"
             )
-        return SceneModel.from_graph(graph, x, self.highlight(graph, x, mark_close),
-                                     title)
+        return SceneModel.from_graph(graph, x, self.highlight(graph, x, mark_close), title)
 
     # -- outputs -----------------------------------------------------------
     @staticmethod
@@ -606,24 +675,39 @@ class Viewer:
             "installed; add the view extras with: pip install 'crochetsim[view]'"
         )
 
-    def save_png(self, graph: StitchGraph, path, camera=None, mark_close: float = 0.0,
-                 title: str = "", style=None) -> Path:
+    def save_png(
+        self,
+        graph: StitchGraph,
+        path,
+        camera=None,
+        mark_close: float = 0.0,
+        title: str = "",
+        style=None,
+    ) -> Path:
         scene = self.scene(graph, mark_close, title)
         try:
             return self.png.render(scene, path, style, camera)
         except ImportError as exc:
             raise self._missing_view(exc) from exc
 
-    def save_html(self, graph: StitchGraph, path, camera=None, mark_close: float = 0.0,
-                  title: str = "", open_browser: bool = False) -> Path:
+    def save_html(
+        self,
+        graph: StitchGraph,
+        path,
+        camera=None,
+        mark_close: float = 0.0,
+        title: str = "",
+        open_browser: bool = False,
+    ) -> Path:
         scene = self.scene(graph, mark_close, title)
         try:
             return self.html.render(scene, path, None, camera, open_browser=open_browser)
         except ImportError as exc:
             raise self._missing_view(exc) from exc
 
-    def show(self, graph: StitchGraph, camera=None, mark_close: float = 0.0,
-             title: str = "", path=None):
+    def show(
+        self, graph: StitchGraph, camera=None, mark_close: float = 0.0, title: str = "", path=None
+    ):
         """Open a pannable model in a browser, or a matplotlib window as fallback.
 
         Writes the standalone HTML and opens its file URI.

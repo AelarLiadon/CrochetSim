@@ -107,8 +107,9 @@ MISSING_VIEW_PROBE = textwrap.dedent("""
 
 def test_missing_view_dependency_explains_the_extra():
     """Viewer's output methods must name crochetsim[view], not leak ImportError."""
-    result = subprocess.run([sys.executable, "-c", MISSING_VIEW_PROBE],
-                            capture_output=True, text=True, check=True)
+    result = subprocess.run(
+        [sys.executable, "-c", MISSING_VIEW_PROBE], capture_output=True, text=True, check=True
+    )
     lines = result.stdout.strip().splitlines()
     assert len(lines) == 3, result.stdout + result.stderr
     for line in lines:
@@ -120,13 +121,35 @@ def test_missing_view_dependency_explains_the_extra():
 # the public surface
 # ---------------------------------------------------------------------------
 PUBLIC_API = [
-    "Certificate", "Certifier", "CertifyConfig", "CrochetError",
-    "EmbeddingOptimiser", "EmbeddingResult", "FaceSet", "InvalidPatternError",
-    "MissingDependencyError", "MissingPositionsError", "Pattern",
-    "PatternSyntaxError", "Row", "RowError", "SelfIntersectionDetector",
-    "Solution", "Solver", "SolverConfig", "Stitch", "StitchGraph", "StitchKind",
-    "SurfaceMetrics", "UnitEdgeSolver", "UnknownExampleError",
-    "UnsolvableGraphError", "ValidationReport", "Verdict", "certify", "examples",
+    "Certificate",
+    "Certifier",
+    "CertifyConfig",
+    "CrochetError",
+    "EmbeddingOptimiser",
+    "EmbeddingResult",
+    "FaceSet",
+    "InvalidPatternError",
+    "MissingDependencyError",
+    "MissingPositionsError",
+    "Pattern",
+    "PatternSyntaxError",
+    "Row",
+    "RowError",
+    "SelfIntersectionDetector",
+    "Solution",
+    "Solver",
+    "SolverConfig",
+    "Stitch",
+    "StitchGraph",
+    "StitchKind",
+    "SurfaceMetrics",
+    "UnitEdgeSolver",
+    "UnknownExampleError",
+    "UnsolvableGraphError",
+    "ValidationReport",
+    "Verdict",
+    "certify",
+    "examples",
     "solve",
 ]
 
@@ -156,7 +179,7 @@ def test_solution_exposes_the_whole_result():
     assert isinstance(solution, cs.Solution)
     assert solution.rows == 7
     assert solution.graph.n == 73
-    assert solution.seed == 3          # the configured default, not 0
+    assert solution.seed == 3  # the configured default, not 0
     assert solution.is_clean == solution.certificate.is_clean()
     assert solution.x.shape == (73, 3)
     assert "VERDICT" in solution.describe()
@@ -187,16 +210,23 @@ def test_certify_measures_without_solving():
 # import weight
 # ---------------------------------------------------------------------------
 HEAVY = ("matplotlib", "plotly", "mpl_toolkits")
-CORE_MODULES = ["crochetsim", "crochetsim.api", "crochetsim.pattern",
-                "crochetsim.metrics", "crochetsim.embedding", "crochetsim.examples"]
+CORE_MODULES = [
+    "crochetsim",
+    "crochetsim.api",
+    "crochetsim.pattern",
+    "crochetsim.metrics",
+    "crochetsim.embedding",
+    "crochetsim.examples",
+]
 
 
 def loaded_heavy_modules(module: str) -> str:
     """What a fresh interpreter has in ``sys.modules`` after importing ``module``."""
-    code = (f"import sys, importlib; importlib.import_module({module!r}); "
-            f"print(sorted(m for m in {HEAVY!r} if m in sys.modules))")
-    done = subprocess.run([sys.executable, "-c", code],
-                          capture_output=True, text=True, check=True)
+    code = (
+        f"import sys, importlib; importlib.import_module({module!r}); "
+        f"print(sorted(m for m in {HEAVY!r} if m in sys.modules))"
+    )
+    done = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=True)
     return done.stdout.strip()
 
 
@@ -231,12 +261,13 @@ RENDER_PROBE = textwrap.dedent("""
 
 
 def test_rendering_is_what_pulls_the_toolkit_in():
-    done = subprocess.run([sys.executable, "-c", RENDER_PROBE],
-                          capture_output=True, text=True, check=True)
+    done = subprocess.run(
+        [sys.executable, "-c", RENDER_PROBE], capture_output=True, text=True, check=True
+    )
     solved, rendered = done.stdout.strip().splitlines()
 
-    assert solved == "solved []", solved          # solving needs no view extras
-    assert "matplotlib" in rendered, rendered     # drawing does
+    assert solved == "solved []", solved  # solving needs no view extras
+    assert "matplotlib" in rendered, rendered  # drawing does
 
 
 def test_installed_metadata_matches_the_package_version():

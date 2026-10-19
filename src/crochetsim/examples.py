@@ -167,17 +167,21 @@ def hyperbolic(n_rows: int = 11, start: int = 20, step: int = 4) -> str:
         rows.append(f"Row {r:3d} [{L:3d} st]:  " + ", ".join(parts))
     return "\n".join(rows) + "\n"
 
+
 def circle(n_rows: int = 15) -> str:
     """Generates a circular crochet pattern with the given number of rows, starting
     with 12 stitches and increasing by 12 each row."""
+
     def circleRow(n):
         return f"Row {(n + 1):3d} [{12 * (n + 2):3d} st]:  " + ", ".join(
-            [", ".join(["sc"] * n + ["inc"]) for _ in range(12)])
+            [", ".join(["sc"] * n + ["inc"]) for _ in range(12)]
+        )
 
     rows = ["Row   0 [ 12 st]:  12 sc"]
-    for n in range(n_rows-1):
+    for n in range(n_rows - 1):
         rows.append(circleRow(n))
     return "\n".join(rows) + "\n"
+
 
 @dataclass(frozen=True)
 class ExamplePattern:
@@ -198,10 +202,13 @@ CATALOGUE: list[ExamplePattern] = [
     ExamplePattern("lathe", "lathe2", "lathe / vase, 37 rows", lathe2),
     ExamplePattern("volume", "strPattern", "closed 52-row sphere", strPattern),
     ExamplePattern("cone", "testPattern", "artificial doubling cone", testPattern),
-    ExamplePattern("hyperbolic", "hyperbolic(11, 20, 4)",
-                   "real hyperbolic patch, 11 rows, +25%/row", hyperbolic()),
-    ExamplePattern("circle", "circle(15)",
-                   "circular pattern, 15 rows", circle()),
+    ExamplePattern(
+        "hyperbolic",
+        "hyperbolic(11, 20, 4)",
+        "real hyperbolic patch, 11 rows, +25%/row",
+        hyperbolic(),
+    ),
+    ExamplePattern("circle", "circle(15)", "circular pattern, 15 rows", circle()),
 ]
 
 
@@ -213,5 +220,4 @@ def by_key(key: str) -> ExamplePattern:
     for example in CATALOGUE:
         if example.key == key:
             return example
-    raise UnknownExampleError(
-        f"no such example pattern {key!r}; known: {', '.join(keys())}")
+    raise UnknownExampleError(f"no such example pattern {key!r}; known: {', '.join(keys())}")

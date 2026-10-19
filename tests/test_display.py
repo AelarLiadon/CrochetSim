@@ -144,8 +144,7 @@ def test_equal_axes_makes_a_cubic_box():
         EqualAxes.format(axes)
         EqualAxes.apply(axes, np.array([[0.0, 0.0, 0.0], [10.0, 2.0, 5.0]]))
 
-        widths = [lo[1] - lo[0]
-                  for lo in (axes.get_xlim3d(), axes.get_ylim3d(), axes.get_zlim3d())]
+        widths = [lo[1] - lo[0] for lo in (axes.get_xlim3d(), axes.get_ylim3d(), axes.get_zlim3d())]
         assert widths[0] == pytest.approx(widths[1])
         assert widths[1] == pytest.approx(widths[2])
         figure.clear()
@@ -155,9 +154,9 @@ def test_html_is_self_contained_and_keeps_the_payload(solved, tmp_path):
     out = Viewer().save_html(solved, tmp_path / "model.html")
     text = out.read_text(encoding="utf-8")
 
-    assert out.stat().st_size > 500_000        # plotly.js is inlined, no CDN
+    assert out.stat().st_size > 500_000  # plotly.js is inlined, no CDN
     assert "<html" in text.lower()
-    assert "NaN" in text                       # segment traces use NaN separators
-    assert f"{solved.n} stitches" in text      # the node trace is present
+    assert "NaN" in text  # segment traces use NaN separators
+    assert f"{solved.n} stitches" in text  # the node trace is present
     # Per-node hover text; plotly escapes '<' as \u003c inside the JSON payload.
     assert r"stitch 0\u003cbr\u003eradius" in text
