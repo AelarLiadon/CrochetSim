@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      # Deterministic headless rendering; the runner has no display, and
+      # display.py is written to cope with Agg.
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --extra dev
+      - name: Lint
+        run: uv run ruff check src tests
+      - name: Layering contracts
+        run: uv run lint-imports --no-cache --no-logo
+      - name: Test
+        run: uv run pytest -q
+      - name: Build
+        run: uv build
+      - name: Check the distribution metadata
+        run: uv run twine check dist/*
+
+  docs:
+    name: docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.10"
+      - run: uv sync --extra docs
+      - run: uv run mkdocs build --strict
