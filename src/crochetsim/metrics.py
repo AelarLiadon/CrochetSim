@@ -648,7 +648,7 @@ class SurfaceMetrics:
         ]
         angles = np.asarray(angles)
         non_planarity = np.array([
-            np.sqrt(lam[u][0] / lam[u].sum()) if ok[u] and lam[u].sum() > 0 else 0.0
+            np.sqrt(max(lam[u][0], 0.0) / lam[u].sum()) if ok[u] and lam[u].sum() > 0 else 0.0
             for u in range(n)
         ])
         stats = NormalVariationStats(n=n, n_ok=int(ok.sum()), angles=angles,
