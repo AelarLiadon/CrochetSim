@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from ._errors import UnknownExampleError
 
-__all__ = ["CATALOGUE", "ExamplePattern", "by_key", "hyperbolic", "keys"]
+__all__ = ["CATALOGUE", "ExamplePattern", "by_key", "circle", "hyperbolic", "keys"]
 
 strPattern = """
 Row   0 [ 10 st]:  10 sc
