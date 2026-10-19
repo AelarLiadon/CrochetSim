@@ -179,7 +179,6 @@ def _bending_operator(graph: StitchGraph) -> sp.csr_matrix:
     ``||M x||^2`` is the bending energy, i.e. the sum of squared deviations of
     each node from the mean of its neighbours.
     """
-    graph._require_canonical_ids()
     n = graph.n
     A = nx.to_scipy_sparse_array(graph.graph, nodelist=range(n),
                                  format="csr").astype(float)
@@ -219,7 +218,6 @@ class UnitEdgeSolver(Solver):
 
     def solve(self, graph: StitchGraph, x0=None) -> EmbeddingResult:
         cfg = self.config
-        graph._require_canonical_ids()
         n = graph.n
         e = graph.edge_array()
         residual, jacobian, _ = _make_edge_functions(e, n)

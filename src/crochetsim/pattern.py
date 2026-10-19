@@ -331,11 +331,21 @@ class Pattern:
 class StitchGraph:
     """A stitch graph plus the row index of every node.
 
-    All accessors index arrays by node id.  ``list(graph.nodes())`` is insertion
-    order, which is not ``0..n-1`` even though the labels are.
+    All accessors index arrays by node id, so node labels must be exactly
+    ``0..n-1``.  That is checked once, here, at construction: ``list(graph.nodes())``
+    is *insertion* order, which is not id order even when the labels are right -
+    :meth:`Pattern.to_graph` adds the magic-ring wrap edge before the rest of the
+    nodes, so ``list(graph.nodes())[:4]`` can be ``[0, 19, 1, 2]``.
     """
 
     def __init__(self, graph: nx.Graph, rows: Sequence[int] | None = None):
+        ids = sorted(graph.nodes())
+        if ids != list(range(len(ids))):
+            raise ValueError(
+                "node labels must be exactly 0..n-1; got "
+                f"{ids[:6]}{'...' if len(ids) > 6 else ''}. "
+                "Use networkx.convert_node_labels_to_integers first."
+            )
         self._graph = graph
         n = graph.number_of_nodes()
         self.rows: list[int] = list(rows) if rows is not None else [0] * n
@@ -371,7 +381,6 @@ class StitchGraph:
 
     def edge_array(self) -> np.ndarray:
         """Edges as an ``(m, 2)`` int64 array of node ids."""
-        self._require_canonical_ids()
         return np.asarray(list(self._graph.edges), dtype=np.int64).reshape(-1, 2)
 
     def edge_weights(self) -> np.ndarray:
@@ -391,7 +400,6 @@ class StitchGraph:
         """``(n, 3)`` coordinates indexed by node id, or None if unset."""
         if not self.has_positions:
             return None
-        self._require_canonical_ids()
         x = np.zeros((self.n, 3), dtype=float)
         for node, data in self._graph.nodes(data=True):
             x[int(node)] = data["pos"]
@@ -399,22 +407,10 @@ class StitchGraph:
 
     @positions.setter
     def positions(self, x) -> None:
-        self._require_canonical_ids()
         x = np.asarray(x, dtype=float).reshape(self.n, 3)
         for node in self._graph.nodes:
             # A list, not an array: keeps the graph networkx-serialisable.
             self._graph.nodes[node]["pos"] = x[int(node)].tolist()
-
-    # -- invariants --------------------------------------------------------
-    def _require_canonical_ids(self) -> None:
-        """Raise ValueError unless node labels are exactly ``0..n-1``."""
-        ids = sorted(self._graph.nodes())
-        if ids != list(range(len(ids))):
-            raise ValueError(
-                "node labels must be exactly 0..n-1; got "
-                f"{ids[:6]}{'...' if len(ids) > 6 else ''}. "
-                "Use networkx.convert_node_labels_to_integers first."
-            )
 
     def __len__(self) -> int:
         return self.n

@@ -633,7 +633,6 @@ class SurfaceMetrics:
 
     @staticmethod
     def pca_normals(graph: StitchGraph, x, ring: int = 1):
-        graph._require_canonical_ids()
         return _pca_normals(graph.graph, x, ring=ring)
 
     @staticmethod
