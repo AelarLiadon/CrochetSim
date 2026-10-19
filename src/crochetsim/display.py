@@ -6,7 +6,7 @@ model and the face-coloured view.
 
 import math
 from abc import ABC, abstractmethod
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar
@@ -245,10 +245,8 @@ class MatplotlibBackend:
                 except Exception:
                     live = True          # cannot tell -> do not risk closing anything
                 if not live:
-                    try:
+                    with suppress(Exception):
                         matplotlib.use(previous, force=True)
-                    except Exception:
-                        pass
 
     @staticmethod
     def available() -> str:
@@ -275,16 +273,17 @@ class EqualAxes:
     @staticmethod
     def apply(ax, x=None) -> None:
         """Set cube-equal limits, around ``x`` or around the current limits."""
+        setters = (ax.set_xlim3d, ax.set_ylim3d, ax.set_zlim3d)
         if x is not None:
             x = np.asarray(x, dtype=float).reshape(-1, 3)
             centre = x.mean(0)
             half = 0.55 * np.abs(x - centre).max() * 1.02
-            for setter, c in zip((ax.set_xlim3d, ax.set_ylim3d, ax.set_zlim3d), centre):
+            for setter, c in zip(setters, centre, strict=True):
                 setter(float(c - half), float(c + half))
         else:
             limits = (ax.get_xlim3d(), ax.get_ylim3d(), ax.get_zlim3d())
             radius = 0.5 * max(abs(lo[1] - lo[0]) for lo in limits)
-            for setter, lo in zip((ax.set_xlim3d, ax.set_ylim3d, ax.set_zlim3d), limits):
+            for setter, lo in zip(setters, limits, strict=True):
                 middle = float(np.mean(lo))
                 setter(middle - radius, middle + radius)
         ax.set_box_aspect((1, 1, 1))

@@ -2,11 +2,11 @@
 
 import pytest
 
-from crochetsim.embedding import SolverConfig, UnitEdgeSolver
+from crochetsim.embedding import UnitEdgeSolver
 from crochetsim.examples import keys
-from golden import GOLDEN, pattern_for, solve
 from crochetsim.metrics import Verdict
 from crochetsim.pattern import StitchGraph
+from golden import GOLDEN, pattern_for, solve
 
 
 def test_every_golden_row_is_a_catalogue_pattern():
@@ -27,7 +27,7 @@ def test_calibrated_result(golden):
     # Geometry, to within the solver's branch-to-branch jitter.
     assert cert.min_nonadjacent == pytest.approx(golden.min_gap, abs=1e-3)
     assert cert.face_intersections == golden.crossings
-    assert cert.faces.F == golden.faces
+    assert golden.faces == cert.faces.F
     assert cert.faces.chi == 2
     assert cert.gauss_bonnet_over_2pi == pytest.approx(2.0, abs=1e-6)
     assert cert.verdict is Verdict(golden.verdict)

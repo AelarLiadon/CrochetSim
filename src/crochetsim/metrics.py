@@ -346,7 +346,8 @@ def _edge_proximity(x, edges, thresholds=(0.5, 0.8, 0.95), faces=None) -> Proxim
                 for k in range(len(f)):
                     incidence[frozenset((f[k], f[(k + 1) % len(f)]))].append(fi)
             edge_faces = [set(incidence.get(frozenset(e), ())) for e in edges]
-            keep = np.array([not (edge_faces[a] & edge_faces[b]) for a, b in zip(i, j)], dtype=bool)
+            keep = np.array([not (edge_faces[a] & edge_faces[b])
+                             for a, b in zip(i, j, strict=True)], dtype=bool)
             i, j = i[keep], j[keep]
         d = _seg_seg_dist(P[i], Q[i] - P[i], P[j], Q[j] - P[j]) if len(i) else np.zeros(0)
     else:
@@ -356,7 +357,8 @@ def _edge_proximity(x, edges, thresholds=(0.5, 0.8, 0.95), faces=None) -> Proxim
     return ProximityReport(
         min_dist=float(d.min()) if len(d) else float("inf"),
         counts={float(t): int((d < t).sum()) for t in thresholds},
-        close_pairs=np.stack([i[close], j[close]], 1) if close.any() else np.zeros((0, 2), np.int64),
+        close_pairs=(np.stack([i[close], j[close]], 1) if close.any()
+                     else np.zeros((0, 2), np.int64)),
         n_candidates=int(n_candidates),
         n_tested=len(i),
         thresholds=tuple(float(t) for t in thresholds),
@@ -451,7 +453,8 @@ def _face_intersections(x, faces, skip_shared_vertex=True) -> IntersectionReport
                 u = np.cross(n, t)
                 u /= np.linalg.norm(u)
                 v = np.cross(n, u)
-                project = lambda Q: np.stack([Q @ u, Q @ v], axis=-1)
+                def project(Q):
+                    return np.stack([Q @ u, Q @ v], axis=-1)
                 hits[np.where(remaining)[0][coplanar]] = _coplanar_triangle_overlap(
                     project(Ar[coplanar]), project(Br[coplanar])
                 )

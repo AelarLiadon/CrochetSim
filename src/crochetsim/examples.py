@@ -143,8 +143,11 @@ Row   4 [ 21 st]:  160 inc
 
 
 def hyperbolic(n_rows: int = 11, start: int = 20, step: int = 4) -> str:
-    """Generates a hyperbolic crochet pattern with the given number of rows, first-row stitch count, and step size.
-    step is the number of stitches between increases.  e.g step=4 means "inc every 4 stitches", 25% increase per row.
+    """Generates a hyperbolic crochet pattern with the given number of rows,
+    first-row stitch count, and step size.
+
+    step is the number of stitches between increases.  e.g step=4 means "inc every
+    4 stitches", 25% increase per row.
     """
     rows = [f"Row   0 [{start:3d} st]:  {start} sc"]
     L = start
@@ -163,7 +166,8 @@ def hyperbolic(n_rows: int = 11, start: int = 20, step: int = 4) -> str:
     return "\n".join(rows) + "\n"
 
 def circle(n_rows: int = 15) -> str:
-    """Generates a circular crochet pattern with the given number of rows, starting with 12 stitches and increasing by 12 each row."""
+    """Generates a circular crochet pattern with the given number of rows, starting
+    with 12 stitches and increasing by 12 each row."""
     def circleRow(n):
         return f"Row {(n + 1):3d} [{12 * (n + 2):3d} st]:  " + ", ".join(
             [", ".join(["sc"] * n + ["inc"]) for _ in range(12)])
