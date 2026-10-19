@@ -5,6 +5,8 @@ Also contains functions to generate hyperbolic and circle patterns of arbitrary 
 
 from dataclasses import dataclass
 
+from ._errors import UnknownExampleError
+
 __all__ = ["CATALOGUE", "ExamplePattern", "by_key", "hyperbolic", "keys"]
 
 strPattern = """
@@ -211,4 +213,5 @@ def by_key(key: str) -> ExamplePattern:
     for example in CATALOGUE:
         if example.key == key:
             return example
-    raise KeyError(f"no such example pattern {key!r}; known: {', '.join(keys())}")
+    raise UnknownExampleError(
+        f"no such example pattern {key!r}; known: {', '.join(keys())}")

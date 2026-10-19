@@ -6,6 +6,8 @@ from enum import Enum
 import networkx as nx
 import numpy as np
 
+from ._errors import InvalidPatternError, PatternSyntaxError, UnsolvableGraphError
+
 __all__ = [
     "Pattern",
     "Row",
@@ -50,7 +52,7 @@ class StitchKind(Enum):
                     return kind, 1
                 if rest.isdigit():
                     return kind, int(rest)
-        raise ValueError(f"unknown stitch token {token!r}")
+        raise PatternSyntaxError(f"unknown stitch token {token!r}")
 
     @classmethod
     def try_parse(cls, token: str):
@@ -97,7 +99,7 @@ class Stitch:
             left, right = left.strip(), right.strip()
             if left.isnumeric():
                 return [cls.parse(right)] * int(left)
-            raise ValueError(f"invalid stitch representation: {token!r}")
+            raise PatternSyntaxError(f"invalid stitch representation: {token!r}")
         return [cls.parse(token)]
 
 @dataclass(frozen=True)
@@ -166,6 +168,16 @@ class ValidationReport:
         if self.ok:
             return "valid"
         return str(self.errors[0]) if self.errors else "invalid"
+
+    def raise_if_invalid(self, name: str = "") -> "ValidationReport":
+        """Raise :class:`InvalidPatternError` instead of reporting.
+
+        Returns ``self``, so ``pattern.validate().raise_if_invalid()`` chains.
+        """
+        if not self.ok:
+            where = f"{name}: " if name else ""
+            raise InvalidPatternError(where + self.message())
+        return self
 
     def __bool__(self) -> bool:
         return self.ok
@@ -341,7 +353,7 @@ class StitchGraph:
     def __init__(self, graph: nx.Graph, rows: Sequence[int] | None = None):
         ids = sorted(graph.nodes())
         if ids != list(range(len(ids))):
-            raise ValueError(
+            raise UnsolvableGraphError(
                 "node labels must be exactly 0..n-1; got "
                 f"{ids[:6]}{'...' if len(ids) > 6 else ''}. "
                 "Use networkx.convert_node_labels_to_integers first."

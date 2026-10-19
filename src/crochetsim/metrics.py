@@ -13,6 +13,7 @@ import networkx as nx
 import numpy as np
 from scipy.spatial import cKDTree
 
+from ._errors import MissingPositionsError
 from .pattern import StitchGraph
 
 __all__ = [
@@ -737,7 +738,7 @@ class Certifier:
         if x is None:
             x = graph.positions
             if x is None:
-                raise ValueError(
+                raise MissingPositionsError(
                     "graph has no positions; solve it first (UnitEdgeSolver) or pass x="
                 )
         x = np.asarray(x, dtype=float)

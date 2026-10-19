@@ -13,6 +13,7 @@ from typing import ClassVar
 
 import numpy as np
 
+from ._errors import MissingDependencyError, MissingPositionsError
 from .pattern import StitchGraph
 
 __all__ = [
@@ -133,7 +134,7 @@ class SceneModel:
         if x is None:
             x = graph.positions
             if x is None:
-                raise ValueError(
+                raise MissingPositionsError(
                     "graph has no positions; solve it first, e.g. "
                     "result = embedding.UnitEdgeSolver().solve(graph); "
                     "graph.positions = result.x"
@@ -504,7 +505,8 @@ class FaceRenderer:
              title: str = "") -> int:
         x = graph.positions
         if x is None:
-            raise ValueError("graph has no positions; solve it before drawing faces")
+            raise MissingPositionsError(
+                "graph has no positions; solve it before drawing faces")
         face_list = list(getattr(faces, "faces", faces))
         face_list = [f for f in face_list if 3 <= len(f) <= max_size]
         if not face_list:
@@ -566,7 +568,7 @@ class Viewer:
               title: str = "") -> SceneModel:
         x = graph.positions
         if x is None:
-            raise ValueError(
+            raise MissingPositionsError(
                 "graph has no positions; solve it first, e.g. "
                 "result = embedding.UnitEdgeSolver().solve(graph); "
                 "graph.positions = result.x"
@@ -575,14 +577,29 @@ class Viewer:
                                      title)
 
     # -- outputs -----------------------------------------------------------
+    @staticmethod
+    def _missing_view(exc: ImportError) -> MissingDependencyError:
+        """Turn a bare ImportError into something that names the fix."""
+        return MissingDependencyError(
+            f"rendering needs {exc.name or 'an optional dependency'}, which is not "
+            "installed; add the view extras with: pip install 'crochetsim[view]'"
+        )
+
     def save_png(self, graph: StitchGraph, path, camera=None, mark_close: float = 0.0,
                  title: str = "", style=None) -> Path:
-        return self.png.render(self.scene(graph, mark_close, title), path, style, camera)
+        scene = self.scene(graph, mark_close, title)
+        try:
+            return self.png.render(scene, path, style, camera)
+        except ImportError as exc:
+            raise self._missing_view(exc) from exc
 
     def save_html(self, graph: StitchGraph, path, camera=None, mark_close: float = 0.0,
                   title: str = "", open_browser: bool = False) -> Path:
         scene = self.scene(graph, mark_close, title)
-        return self.html.render(scene, path, None, camera, open_browser=open_browser)
+        try:
+            return self.html.render(scene, path, None, camera, open_browser=open_browser)
+        except ImportError as exc:
+            raise self._missing_view(exc) from exc
 
     def show(self, graph: StitchGraph, camera=None, mark_close: float = 0.0,
              title: str = "", path=None):
@@ -594,7 +611,10 @@ class Viewer:
         try:
             import plotly.graph_objects as _go  # noqa: F401
         except ImportError:
-            return self.window.render(scene, None, None, camera)
+            try:
+                return self.window.render(scene, None, None, camera)
+            except ImportError as exc:
+                raise self._missing_view(exc) from exc
         import tempfile
         target = (Path(path) if path else
                   Path(tempfile.gettempdir()) / "crochetdesign_viewer.html")
