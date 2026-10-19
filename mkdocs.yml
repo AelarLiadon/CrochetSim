@@ -1,0 +1,44 @@
+site_name: crochetsim
+site_description: >-
+  Represent crochet patterns as graphs and embed them in 3D as unit-edge meshes.
+repo_url: https://github.com/AelarLiadon/CrochetDesign
+edit_uri: edit/package/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+nav:
+  - Home: index.md
+  - Explanation:
+      - The solver: explanation/solver.md
+      - Certifying an embedding: explanation/geometry.md
+      - Growth rate and over-density: explanation/growth-limit.md
+  - Reference: reference/api.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            separate_signature: true
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+
+watch:
+  - src/crochetsim

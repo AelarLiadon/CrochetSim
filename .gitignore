@@ -12,6 +12,7 @@ wheels/
 # Local exploration and generated output
 scratch/
 renders/
+site/
 
 # 3D model files
 *.stl

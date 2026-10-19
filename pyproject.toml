@@ -40,7 +40,13 @@ dev = [
     "build",
     "twine",
 ]
-docs = ["mkdocs-material>=9", "mkdocstrings[python]>=0.25"]
+docs = [
+    "mkdocs-material>=9",
+    "mkdocstrings[python]>=0.25",
+    # pymdown-extensions 12.2 made Highlight.__init__'s `md` argument required,
+    # and mkdocstrings does not pass it, so the docs build crashes without this.
+    "pymdown-extensions<12.2",
+]
 all = ["crochetsim[view,dev,docs]"]
 
 # [project.urls] - add the real repository URL before publishing.
