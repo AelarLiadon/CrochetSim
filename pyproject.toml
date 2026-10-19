@@ -59,3 +59,42 @@ files = ["src/crochetsim"]
 # their documented runtime API rather than a typed surface.
 ignore_missing_imports = true
 warn_unused_ignores = true
+
+[tool.importlinter]
+root_packages = ["crochetsim"]
+
+# The layering rules from REFACTOR.md, as executable contracts.
+# "Nothing below display draws" cannot be expressed here; it is a runtime
+# property, tested in tests/test_api.py.
+
+[[tool.importlinter.contracts]]
+name = "errors is a leaf"
+type = "forbidden"
+source_modules = ["crochetsim._errors"]
+forbidden_modules = ["crochetsim.pattern", "crochetsim.metrics", "crochetsim.embedding",
+                     "crochetsim.display", "crochetsim.api", "crochetsim.examples"]
+
+[[tool.importlinter.contracts]]
+name = "pattern is a leaf"
+type = "forbidden"
+source_modules = ["crochetsim.pattern"]
+forbidden_modules = ["crochetsim.metrics", "crochetsim.embedding", "crochetsim.display",
+                     "crochetsim.api", "crochetsim.examples"]
+
+[[tool.importlinter.contracts]]
+name = "the solver does not draw"
+type = "forbidden"
+source_modules = ["crochetsim.embedding"]
+forbidden_modules = ["crochetsim.display"]
+
+[[tool.importlinter.contracts]]
+name = "measurement does not solve or draw"
+type = "forbidden"
+source_modules = ["crochetsim.metrics"]
+forbidden_modules = ["crochetsim.embedding", "crochetsim.display"]
+
+[[tool.importlinter.contracts]]
+name = "the renderer does not solve"
+type = "forbidden"
+source_modules = ["crochetsim.display"]
+forbidden_modules = ["crochetsim.embedding"]
