@@ -73,7 +73,6 @@ __all__ = [
     "Solver",
     "SolverConfig",
     "UnitEdgeSolver",
-    "edge_lengths",
 ]
 
 # Solver defaults.
