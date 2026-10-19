@@ -2,7 +2,7 @@
 
 import pytest
 
-from crochetsim.embedding import UnitEdgeSolver
+from crochetsim.embedding import EmbeddingOptimiser, SolverConfig, UnitEdgeSolver
 from crochetsim.examples import keys
 from crochetsim.metrics import Verdict
 from crochetsim.pattern import StitchGraph
@@ -58,3 +58,23 @@ def test_to_graph_layout_is_seeded():
     a, b = pattern.to_graph(seed=7), pattern.to_graph(seed=7)
     assert a.n == b.n and a.m == b.m
     assert (a.positions == b.positions).all()
+
+
+def test_optimiser_starts_from_the_configured_seed():
+    """A configured seed names the first attempt instead of being ignored."""
+    graph = pattern_for(GOLDEN[0]).to_graph()
+    solver = UnitEdgeSolver(SolverConfig(seed=3))
+    optimiser = EmbeddingOptimiser(solver)
+
+    direct = solver.solve(graph)
+    single, _ = optimiser.best(graph, tries=1)
+
+    assert optimiser.last_seed == 3
+    assert single.max_err == direct.max_err  # same seed, so the same solve
+
+    explicit, _ = optimiser.best(graph, seeds=[3])
+    assert explicit.max_err == direct.max_err
+
+    # A multi-seed search draws from seed..seed+tries-1, not 0..tries-1.
+    optimiser.best(graph, tries=3)
+    assert optimiser.last_seed in (3, 4, 5)

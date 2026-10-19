@@ -293,13 +293,24 @@ class EmbeddingOptimiser:
             return UnitEdgeSolver(replace(self.solver.config, seed=seed))
         return self.solver
 
+    def _default_seeds(self, tries: int) -> list[int]:
+        """``tries`` consecutive seeds, starting at the solver's own seed.
+
+        The configured seed names the *first* attempt.  Building ``range(tries)``
+        instead would silently ignore it: ``UnitEdgeSolver(SolverConfig(seed=3))``
+        followed by ``best(tries=1)`` used to run seed 0.
+        """
+        base = (self.solver.config.seed
+                if isinstance(self.solver, UnitEdgeSolver) else 0)
+        return [base + i for i in range(tries)]
+
     @staticmethod
     def _rank(result: EmbeddingResult, cert: Certificate) -> tuple:
         return (cert.is_clean(), cert.min_nonadjacent, -result.max_err)
 
     def best(self, graph: StitchGraph, tries: int = 5,
              seeds=None) -> tuple[EmbeddingResult, Certificate]:
-        seeds = list(seeds) if seeds is not None else list(range(tries))
+        seeds = list(seeds) if seeds is not None else self._default_seeds(tries)
         best = None
         for seed in seeds:
             result = self._solver_for(seed).solve(graph)
