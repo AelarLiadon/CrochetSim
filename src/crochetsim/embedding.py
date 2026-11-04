@@ -1,54 +1,13 @@
 """Solve for a unit-edge embedding of a stitch graph.
 
-Find coordinates ``X in R^(3n)`` such that ``|X_u - X_v| = 1`` for every edge.
+Find coordinates ``X in R^(3n)`` with ``|X_u - X_v| = 1`` for every edge.  Sparse
+Levenberg-Marquardt minimises the smooth residual ``|X_u - X_v| - 1``; a
+row-normalised Laplacian bending energy applied by continuation selects a shape,
+and an anchored polish then tightens the edges without moving that shape.  The
+design and its calibration are written up in ``docs/explanation/solver.md``.
 
-This replaces the spring / L-BFGS solvers that used to live in ``simulation.py``,
-which were too slow for large patterns and didn't converge to a clean embedding.
-
-    spring relaxation, 2000 iterations   4.6 s   max edge error 35
-    spring relaxation, 26,600 iterations 10.0 s  max edge error 36  (plateau)
-    this solver                          ~5-7 s  max edge error 2.3e-09
-
-The spring method is not slow so much as *stuck*: it drops to ~37 within 2 s and
-then oscillates between 35.5 and 37.6 forever, parked in a local minimum.  Its
-force kernel was also quadratic - it looped over all n^2 node pairs testing a
-dense adjacency matrix for a graph with only m ~ 2n edges.  Measured at n=808
-(both numba): 1.925 ms/iter for the dense O(n^2) form versus 0.0120 ms/iter for
-an O(m) edge list, a 160x per-iteration difference, and 5.2 MB of adjacency
-versus 0.026 MB of edges.
-
-Why this converges
-------------------
-1. Smooth residual ``r_e = |X_u - X_v| - 1`` with an **analytic sparse Jacobian**
-   (6 non-zeros per edge row).  Finite differences cost ~3n extra residual
-   evaluations per iteration, and the old objective used the non-smooth
-   ``abs(dist - 1)``, whose kink sits exactly at the solution - L-BFGS-B with
-   numeric gradients stalled at nit=8 after 3038 evaluations.
-2. Sparse Levenberg-Marquardt (``scipy.optimize.least_squares``,
-   ``method="trf"``).  A second-order step measures curvature, so it converges in
-   ~20-40 iterations *regardless of n*.  There is nothing left to accelerate:
-   multilevel coarsening was measured 6-25x **slower**, and minimum-norm
-   Gauss-Newton 32x slower.
-3. The system is heavily *under*-determined - ``m ~ 2n`` constraints against
-   ``3n - 6`` degrees of freedom - so the solution set is an ~n-dimensional
-   manifold and "converged" does not mean "useful".  LM alone returns an
-   arbitrary crumpled point on that manifold.
-4. Shape selection by a row-normalised Laplacian bending energy
-   ``||mean(neighbours) - x||^2`` applied by continuation over
-   ``mus = (1e2, 1, 1e-2)``, then an *anchored* polish
-   ``r = [edges ; sqrt(anchor_mu) * (x - x_smooth)]``.  This is load-bearing, not
-   cosmetic: with no regulariser the solve lands on a tangle (max edge error 57.7,
-   144,316 face intersections); with too much it collapses (``(1e6, 1e4, 1e2)``
-   gives min gap 0.0001 and 10,269 near-contacts).  ``(1e2, 1, 1e-2)`` is the
-   measured sweet spot, and a plain ``mu = 0`` polish random-walks along the
-   nullspace and destroys the shape, which is why the polish is always anchored.
-
-The harmonic prior is a *flatness* prior and a hyperbolic patch cannot be
-flattened, so it looks like it should cause folding.  The measurements say the
-opposite: relative to no regulariser it removes 10-28x of the near-contacts.
-
-No side effects: :meth:`UnitEdgeSolver.solve` returns coordinates and does not
-touch the graph.  Assign ``graph.positions = result.x`` yourself.
+The solvers do not mutate the graph: assign ``graph.positions = result.x``
+yourself.
 """
 
 import time
@@ -84,25 +43,18 @@ DEFAULT_MAX_NFEV = 60
 
 @dataclass
 class SolverConfig:
-    """Knobs for :class:`UnitEdgeSolver`.
+    """Solver knobs for :class:`UnitEdgeSolver`.
 
-    Attributes
-    ----------
-    mus:
-        Bending-energy weights applied in order by continuation.  Pass ``()`` for
-        a pure constraint solve - fast and exact, but the shape is an arbitrary
-        point on the solution manifold (usually a crumpled tangle).
-    polish:
-        ``"anchored"`` (recommended) tightens the edge residual while staying near
-        the regularised solution.  ``"free"`` is a plain mu=0 polish that can
-        random-walk along the nullspace and destroy the shape; ``None`` stops at
-        the last ``mu``, leaving edges exact only to ~sqrt(mu).
-    seed:
-        Initialisation seed.  Different seeds give different valid solutions;
-        ``seed=3`` is a good default for the hyperbolic pattern.
-    max_nfev:
-        Per-stage iteration cap - the main speed knob.  60 costs ~7 s at n=808 for
-        the same quality that 300 costs ~16 s to reach.
+    Args:
+        mus: Bending-energy weights applied in order by continuation.  Empty for a
+            pure constraint solve: fast and exact, but the shape is an arbitrary
+            point of the solution manifold.
+        anchor_mu: Weight of the anchored polish.
+        seed: Initialisation seed.  Different seeds give different valid solutions.
+        max_nfev: Per-stage iteration cap, and the main speed knob.
+        polish: ``"anchored"`` tightens the edge residual while staying near the
+            regularised solution.  ``"free"`` is an unanchored polish.  ``None``
+            stops after the last ``mu``, leaving edges exact only to ~sqrt(mu).
     """
 
     mus: tuple = DEFAULT_MUS
@@ -114,12 +66,10 @@ class SolverConfig:
 
 @dataclass
 class EmbeddingResult:
-    """Where :class:`UnitEdgeSolver` put the nodes, and how well it did.
+    """Where :class:`UnitEdgeSolver` placed the nodes, and how well it did.
 
     ``x`` is an ``(n, 3)`` array indexed by node id, the same convention as
-    ``StitchGraph.positions``, so ``result.x[:, 0]`` and ``graph.positions``
-    agree.  (The solver works internally with the flat ``3n`` vector that
-    ``scipy.optimize.least_squares`` wants; that detail stops here.)
+    ``StitchGraph.positions``.
     """
 
     x: np.ndarray
@@ -144,10 +94,8 @@ class EmbeddingResult:
 def _make_edge_functions(e, n):
     """Return ``(residual, jacobian, m)`` for ``r_e = |x_u - x_v| - 1``.
 
-    The Jacobian is built in sparse COO form: each of the m rows has exactly 6
-    non-zeros (3 per endpoint), so it costs O(m) to assemble.  That is the point
-    of the whole design - a numeric Jacobian would cost 3n residual evaluations
-    per iteration instead of one assembly.
+    The Jacobian is sparse, with exactly 6 non-zeros per row, so it costs O(m) to
+    assemble.
     """
     e = np.asarray(e, dtype=np.int64).reshape(-1, 2)
     m = len(e)
@@ -199,11 +147,7 @@ def _sphericity(x) -> float:
 
 
 class Solver(ABC):
-    """Anything that can place the nodes of a :class:`StitchGraph`.
-
-    Abstract so an alternative method is a drop-in: nothing downstream knows
-    which implementation produced the coordinates.
-    """
+    """Anything that can place the nodes of a :class:`StitchGraph`."""
 
     @abstractmethod
     def solve(self, graph: StitchGraph, x0=None) -> EmbeddingResult:
@@ -285,10 +229,8 @@ class UnitEdgeSolver(Solver):
 class EmbeddingOptimiser:
     """Solve with several seeds and keep the cleanest embedding.
 
-    An unlucky seed can land on a folded point of the solution manifold, so
-    rather than trusting one run this certifies each candidate and keeps the one
-    with the largest minimum non-adjacent edge gap, breaking ties on edge
-    exactness.  Like the solver, it does **not** write to the graph.
+    Each candidate is certified and ranked by the largest minimum non-adjacent
+    edge gap, breaking ties on edge exactness.  Does not write to the graph.
     """
 
     def __init__(self, solver: Solver | None = None, certifier: Certifier | None = None):
@@ -302,12 +244,7 @@ class EmbeddingOptimiser:
         return self.solver
 
     def _default_seeds(self, tries: int) -> list[int]:
-        """``tries`` consecutive seeds, starting at the solver's own seed.
-
-        The configured seed names the *first* attempt.  Building ``range(tries)``
-        instead would silently ignore it: ``UnitEdgeSolver(SolverConfig(seed=3))``
-        followed by ``best(tries=1)`` used to run seed 0.
-        """
+        """``tries`` consecutive seeds, starting from the solver's own seed."""
         base = self.solver.config.seed if isinstance(self.solver, UnitEdgeSolver) else 0
         return [base + i for i in range(tries)]
 

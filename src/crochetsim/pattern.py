@@ -112,8 +112,7 @@ class Row:
     stitches: tuple[Stitch, ...] = ()
 
     def __post_init__(self) -> None:
-        # Accept any sequence, store a tuple.  Frozen and hashable, so it cannot
-        # change under a StitchGraph that has cached a reference to it.
+        # Accept any sequence, store a tuple: the row is frozen and must hash.
         object.__setattr__(self, "stitches", tuple(self.stitches))
 
     @property
@@ -189,13 +188,9 @@ class ValidationReport:
 class Pattern:
     """A crochet pattern: a name and a sequence of :class:`Row`.
 
-    Immutable: :attr:`name` and :attr:`rows` are read-only, so a pattern handed to
-    :meth:`to_graph`, the solver and the certifier cannot change identity
-    mid-pipeline.  Build a different one with :meth:`from_text` or
-    :meth:`from_rows`.
-
-    Parses from and renders back to ``Row N [X st]: a, b, c`` text.  Row headers
-    are recomputed rather than read, so stale counts in the source are ignored.
+    Immutable; build one with :meth:`from_text` or :meth:`from_rows`.  Parses and
+    renders ``Row N [X st]: a, b, c`` text, recomputing row headers rather than
+    trusting the counts in the source.
     """
 
     def __init__(self, name: str = "", rows: Sequence[Row] | None = None):
@@ -221,7 +216,7 @@ class Pattern:
     # -- construction ------------------------------------------------------
     @classmethod
     def from_text(cls, text: str, name: str = "") -> "Pattern":
-        """Parse ``Row N [X st]: a, b, c`` lines.  Labels are not trusted."""
+        """Parse ``Row N [X st]: a, b, c`` lines, ignoring the row headers."""
         rows: list[Row] = []
         for line in text.split("\n"):
             if ":" not in line:
@@ -283,9 +278,9 @@ class Pattern:
 
     # -- topology ----------------------------------------------------------
     def to_graph(self, seed: int = 0) -> "StitchGraph":
-        """Build the stitch graph: one node per stitch, plus horizontal edges
-        within each row and vertical edges down to the row below.  Every node is
-        given a ``pos`` layout guess and a ``weight``.
+        """Build the stitch graph: one node per stitch, horizontal edges within
+        each row, vertical edges down to the row below.  Each node gets a
+        placeholder ``pos`` attribute and each edge a ``weight``.
         """
         graph = nx.Graph()
         rng = random.Random(seed)
@@ -303,16 +298,15 @@ class Pattern:
                     weight=1,
                 )
                 if i == 0:
-                    # A one-stitch row is horizontally isolated: it gets no
-                    # self-loop, only its vertical parent edge.
+                    # A one-stitch row is horizontally isolated: no self-loop.
                     if length > 1:
                         graph.add_edge(stitch, stitch + length - 1, weight=1 / (2**row_index))
                 else:
                     graph.add_edge(stitch, stitch - 1, weight=1 / (2**row_index))
                 stitch += 1
 
-        # Vertical edges: each stitch works into `consumes()` stitches of the
-        # row below, starting at the next unconsumed slot of that row.
+        # Vertical edges: each stitch works into `consumes()` slots of the row
+        # below, starting at the next unconsumed slot.
         parent = 0  # first stitch of the row below still unconsumed
         child = 0  # first stitch of the current row
         for row_index, row in enumerate(self.rows):
@@ -344,11 +338,8 @@ class Pattern:
 class StitchGraph:
     """A stitch graph plus the row index of every node.
 
-    All accessors index arrays by node id, so node labels must be exactly
-    ``0..n-1``.  That is checked once, here, at construction: ``list(graph.nodes())``
-    is *insertion* order, which is not id order even when the labels are right -
-    :meth:`Pattern.to_graph` adds the magic-ring wrap edge before the rest of the
-    nodes, so ``list(graph.nodes())[:4]`` can be ``[0, 19, 1, 2]``.
+    Accessors index arrays by node id, so node labels must be exactly ``0..n-1``;
+    that is validated here, at construction.
     """
 
     def __init__(self, graph: nx.Graph, rows: Sequence[int] | None = None):

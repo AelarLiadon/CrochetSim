@@ -1,8 +1,8 @@
 site_name: crochetsim
 site_description: >-
   Represent crochet patterns as graphs and embed them in 3D as unit-edge meshes.
-repo_url: https://github.com/AelarLiadon/CrochetDesign
-edit_uri: edit/package/docs/
+repo_url: https://github.com/AelarLiadon/CrochetSim
+edit_uri: edit/main/docs/
 
 theme:
   name: material

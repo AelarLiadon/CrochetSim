@@ -1,7 +1,4 @@
-"""Built-in example patterns.
-
-Also contains functions to generate hyperbolic and circle patterns of arbitrary size.
-"""
+"""Built-in example patterns, plus generators for hyperbolic and circular ones."""
 
 from dataclasses import dataclass
 
@@ -145,11 +142,13 @@ Row   4 [ 21 st]:  160 inc
 
 
 def hyperbolic(n_rows: int = 11, start: int = 20, step: int = 4) -> str:
-    """Generates a hyperbolic crochet pattern with the given number of rows,
-    first-row stitch count, and step size.
+    """Generate a hyperbolic crochet pattern.
 
-    step is the number of stitches between increases.  e.g step=4 means "inc every
-    4 stitches", 25% increase per row.
+    Args:
+        n_rows: Number of rows.
+        start: Stitches in the first row.
+        step: Stitches between increases, so ``step=4`` means "inc every 4
+            stitches", a 25% increase per row.
     """
     rows = [f"Row   0 [{start:3d} st]:  {start} sc"]
     L = start
@@ -169,8 +168,8 @@ def hyperbolic(n_rows: int = 11, start: int = 20, step: int = 4) -> str:
 
 
 def circle(n_rows: int = 15) -> str:
-    """Generates a circular crochet pattern with the given number of rows, starting
-    with 12 stitches and increasing by 12 each row."""
+    """Generate a circular crochet pattern: 12 stitches in the first row, then 12
+    more each row."""
 
     def circleRow(n):
         return f"Row {(n + 1):3d} [{12 * (n + 2):3d} st]:  " + ", ".join(

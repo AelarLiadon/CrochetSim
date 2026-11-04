@@ -38,12 +38,7 @@ __all__ = [
 # helpers
 # ---------------------------------------------------------------------------
 def _unique_temp_path(suffix: str) -> Path:
-    """A fresh file in the system temp directory.
-
-    ``tempfile.mkstemp`` guarantees the name is unique, so two processes opening a
-    viewer at the same time cannot overwrite each other's HTML - which a fixed
-    ``<tempdir>/crochetsim_viewer.html`` allowed.
-    """
+    """A fresh file in the system temp directory, unique to this call."""
     handle, name = tempfile.mkstemp(prefix="crochetsim_", suffix=suffix)
     os.close(handle)
     return Path(name)
@@ -208,9 +203,10 @@ class SceneModel:
 class MatplotlibBackend:
     """Chooses matplotlib's process-global backend.
 
-    Saving a figure needs no display; opening a window needs a GUI backend.  Because
-    ``matplotlib.use(force=True)`` closes every open figure, switching is refused
-    while any figure is open.
+    Saving a figure needs no display; opening a window needs a GUI backend.  The
+    previous backend is restored once nothing is left open, and switching is
+    refused while any figure is open, because ``matplotlib.use(force=True)`` closes
+    open figures.
     """
 
     GUI_BACKENDS: ClassVar[tuple] = ("TkAgg", "QtAgg", "Qt5Agg", "WXAgg", "MacOSX")
@@ -250,10 +246,8 @@ class MatplotlibBackend:
             yield
         finally:
             # Restore the process-global backend, but never while a figure is
-            # still open: a live window belongs to its GUI backend and
-            # switching would destroy it.  Once nothing is open (the user
-            # closed the window, or the caller rendered and moved on) the
-            # backend is put back, so opening a viewer cannot silently change
+            # still open: switching would destroy a live window.  Once nothing is
+            # open the backend is put back, so opening a viewer does not change
             # how every later call in the process behaves.
             if switched:
                 try:
@@ -315,8 +309,8 @@ class Renderer(ABC):
     """Base class for the three output backends.
 
     ``render`` returns the path written, or None when it only opened a window.
-    The file-writing backends require ``path`` explicitly: a library must not drop
-    ``render.png`` into whatever directory the caller happens to be in.
+    Only :class:`WindowRenderer` takes ``path`` as optional; the file-writing
+    backends require it, so no library call can write into the caller's directory.
     """
 
     @abstractmethod
@@ -479,8 +473,8 @@ class HtmlRenderer(Renderer):
         if open_browser:
             import webbrowser
 
-            # as_uri() gives file:///C:/... ; string concatenation produced
-            # file://C:\... which browsers do not reliably resolve on Windows.
+            # as_uri() gives a file:/// URL; hand-built file:// paths do not
+            # resolve reliably on Windows.
             webbrowser.open(path.resolve().as_uri())
         return path
 

@@ -1,10 +1,9 @@
 """The layering rules, enforced by import-linter.
 
-``REFACTOR.md`` states three rules.  Two of them are import contracts and live in
-``[tool.importlinter]`` in ``pyproject.toml``; this module runs them and checks
-that every one of them is actually evaluated.  The third rule - nothing below
-``display`` draws - is not an import property, so it is proved at runtime in
-``tests/test_api.py`` instead.
+The contracts live in ``[tool.importlinter]`` in ``pyproject.toml``; this module
+runs them and checks that every one of them is actually evaluated.  The third rule
+- nothing below ``display`` draws - is not an import property, so it is proved at
+runtime in ``tests/test_api.py`` instead.
 """
 
 import pathlib

@@ -1,9 +1,8 @@
 """Exceptions raised by :mod:`crochetsim`.
 
-One hierarchy, so ``except CrochetError`` catches everything this package raises
-deliberately.  Each class also inherits from the builtin it used to be raised as
-(``ValueError``, ``KeyError``, ``ImportError``), so code written against the flat
-modules - ``except ValueError:`` - keeps working.
+Every deliberate error derives from :class:`CrochetError`.  Each class also
+inherits the closest builtin (``ValueError``, ``KeyError``, ``ImportError``), so
+ordinary ``except`` clauses keep working.
 """
 
 __all__ = [
@@ -18,7 +17,7 @@ __all__ = [
 
 
 class CrochetError(Exception):
-    """Base class for every error this package raises deliberately."""
+    """Base class for every error raised by this package."""
 
 
 class PatternSyntaxError(CrochetError, ValueError):
@@ -34,7 +33,7 @@ class InvalidPatternError(CrochetError, ValueError):
 
 
 class UnsolvableGraphError(CrochetError, ValueError):
-    """The graph cannot be embedded as given: bad node labels, or empty."""
+    """The graph cannot be embedded as given, e.g. its node labels are not ``0..n-1``."""
 
 
 class MissingPositionsError(CrochetError, ValueError):

@@ -1,15 +1,14 @@
 """Calibrated one-solve results, and the helper that reproduces them.
 
-Every number here comes from a single ``UnitEdgeSolver(SolverConfig(seed=3))``
-solve - no multi-seed search - so it is reproducible and independent of
-``EmbeddingOptimiser``.  These match ``REFACTOR.md`` section 9 exactly.
+Every number comes from one ``UnitEdgeSolver(SolverConfig(seed=3))`` solve, with no
+multi-seed search, so the table is reproducible and independent of
+``EmbeddingOptimiser``.
 
-``max_err`` is an optimiser artefact: it moves with the scipy/BLAS version, so it
-is asserted as a *ceiling* an order of magnitude above the calibrated value.  That
-still catches any real regression, because a broken solve lands at 1e-1 or worse,
-never at 1e-6.  ``min_nonadjacent`` is asserted loosely for the same reason.
-``n``, ``m``, ``faces``, ``crossings`` and the verdict are discrete, so they are
-asserted exactly.
+``max_err`` moves with the scipy/BLAS version, so it is asserted as a ceiling well
+above the calibrated value; a broken solve lands at 1e-1 or worse, so the ceiling
+still catches real regressions.  ``min_nonadjacent`` is asserted loosely for the
+same reason.  ``n``, ``m``, ``faces``, ``crossings`` and the verdict are discrete
+and are asserted exactly.
 """
 
 from dataclasses import dataclass
@@ -53,7 +52,7 @@ def pattern_for(golden: Golden) -> Pattern:
 
 
 def solve(golden: Golden) -> tuple[StitchGraph, Certificate]:
-    """Solve once at :data:`SEED` and certify it, as ``REFACTOR.md`` did."""
+    """Solve once at :data:`SEED` and certify, the way the table was built."""
     graph = pattern_for(golden).to_graph()
     result = UnitEdgeSolver(SolverConfig(seed=SEED)).solve(graph)
     return graph, Certifier().certify(graph, result.x)

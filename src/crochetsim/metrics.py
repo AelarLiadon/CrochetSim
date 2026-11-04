@@ -38,7 +38,7 @@ DEFAULT_CLEAN_GAP = 0.8
 
 
 class Verdict(Enum):
-    """How bad an embedding is.  Graded, because "bad" has three real cases."""
+    """How bad an embedding is."""
 
     CLEAN = "clean"
     TIGHT = "tight"
@@ -125,11 +125,11 @@ class FaceInfo:
 
 @dataclass
 class ProximityReport:
-    """Distances between non-adjacent edges - the rigorous overlap test.
+    """Distances between non-adjacent edges: the rigorous overlap test.
 
-    ``candidates_tested`` counts the pairs that survived pruning and filtering.
-    ``close_pairs`` holds the pairs below the smallest threshold; that is a pair
-    count, not an edge count, since one pinched edge can appear in many pairs.
+    ``n_tested`` counts the pairs that survived pruning and filtering.
+    ``close_pairs`` holds the pairs below the smallest threshold: a pair count, not
+    an edge count, since one pinched edge can appear in many pairs.
     """
 
     min_dist: float
@@ -198,10 +198,10 @@ def _planar_faces(graph: nx.Graph, n: int, m: int):
 
 
 def _triangulate(faces) -> tuple[np.ndarray, np.ndarray]:
-    """Fan-triangulate faces -> ``(tris(K,3), owner(K,))``.
+    """Fan-triangulate faces into ``(tris(K, 3), owner(K,))``.
 
-    These faces are quads that are not planar in 3D, so their interior angles do not
-    sum to ``(k-2)*pi``; triangulate before measuring angles or curvature.
+    The faces are non-planar in 3D, so they are triangulated before angles or
+    curvature are measured on them.
     """
     tris, owner = [], []
     for fi, f in enumerate(faces):
@@ -212,10 +212,10 @@ def _triangulate(faces) -> tuple[np.ndarray, np.ndarray]:
 
 
 def _boundary_faces(faces, max_size: int = 8):
-    """Drop the huge outer/boundary faces.
+    """Drop the outer boundary faces, which are too large to measure.
 
-    Their fan-triangulated slivers manufacture spurious intersections, so use this
-    for intersection and bending measurements.  Gauss-Bonnet needs all faces,
+    Their fan-triangulated slivers manufacture spurious intersections.  Use this
+    for intersection and bending measurements; Gauss-Bonnet needs every face,
     boundary included.
     """
     return [f for f in faces if 3 <= len(f) <= max_size]
@@ -492,8 +492,7 @@ class SelfIntersectionDetector:
     ) -> ProximityReport:
         """Non-adjacent edge pairs closer than each ``threshold``, in graph order.
 
-        Mirrors :meth:`Certifier.certify`: the graph comes first and ``x``
-        defaults to ``graph.positions``.
+        ``x`` defaults to ``graph.positions``.
         """
         if x is None:
             x = graph.positions
@@ -513,7 +512,7 @@ class SelfIntersectionDetector:
 # normals and curvature
 # ---------------------------------------------------------------------------
 def _face_normals(x, faces):
-    """Newell normals and areas.  Newell is the right choice for non-planar n-gons."""
+    """Newell normals and areas, for non-planar n-gons."""
     x = np.asarray(x, dtype=float).reshape(-1, 3)
     N = np.zeros((len(faces), 3))
     for fi, f in enumerate(faces):
@@ -552,8 +551,8 @@ def _angles_between(A, B):
 def _angle_defects(x, faces, n):
     """Discrete Gaussian curvature ``2*pi - sum(incident face angles)``.
 
-    Summed over all nodes this equals ``2*pi*chi`` (Gauss-Bonnet), but only after
-    triangulating and only if the boundary face is included.
+    Summed over all nodes this equals ``2*pi*chi`` (Gauss-Bonnet), but only when
+    every face, boundary included, is triangulated.
     """
     x = np.asarray(x, dtype=float).reshape(-1, 3)
     total = np.zeros(n)
@@ -634,8 +633,8 @@ class SurfaceMetrics:
     def normal_field_variation(graph: StitchGraph, x, faces) -> NormalFieldStats:
         """Discrete bending: normal angle across edge-adjacent faces and nodes.
 
-        The mean varies with mesh density; compare the tail statistics
-        (``p99``/``max``) across meshes.
+        Compare the tail statistics (``p99``/``max``) across meshes: the mean
+        depends on the mesh density.
         """
         faces = _face_list(faces) or []
         N, area = _face_normals(x, faces)
@@ -771,7 +770,7 @@ class Certifier:
         self.detector = SelfIntersectionDetector()
 
     def certify(self, graph: StitchGraph, x=None, faces=None) -> Certificate:
-        """Measure.  Never prints; call :meth:`Certificate.describe` for text."""
+        """Measure.  Never prints; use :meth:`Certificate.describe` for text."""
         if x is None:
             x = graph.positions
             if x is None:
@@ -813,8 +812,7 @@ class Certifier:
         if all_faces:
             small = _boundary_faces(all_faces)
             cert.face_intersections = self.detector.face_intersections(x, small).crossing_count()
-            # ALL faces, boundary included - triangulating only the small ones
-            # gives sum/2pi = 97.5 instead of 2.0.
+            # Every face, boundary included: Gauss-Bonnet needs the boundary too.
             cert.gauss_bonnet_over_2pi = float(
                 SurfaceMetrics.angle_defects(x, all_faces, n).sum() / (2 * np.pi)
             )
@@ -823,11 +821,9 @@ class Certifier:
             cert.normal_node_angle = stats.node_angle
         cert.normal_pca = SurfaceMetrics.normal_variation(graph, x)
 
-        # Graded verdict.  A crossing (face_intersections > 0) or a touching pair
-        # (min_nonadjacent <= 0) is real damage.  A few edge pairs just below
-        # clean_gap are only a *warning*: stitches converging into a sharp tip
-        # legitimately sit at 1/sqrt(2) = 0.707 apart, and no unit-edge fabric can
-        # do better there.  So report the severity, don't collapse it to a bool.
+        # A crossing, or a pair that actually touches, is real damage.  Edge pairs
+        # only just below clean_gap are a warning: stitches converging into a sharp
+        # tip legitimately sit 1/sqrt(2) apart, and no unit-edge fabric does better.
         if (
             cert.max_err >= 1e-6
             or cert.min_nonadjacent <= 0.0

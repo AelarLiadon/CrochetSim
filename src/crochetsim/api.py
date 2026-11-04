@@ -2,8 +2,7 @@
 
 :func:`solve` is the whole library in one call.  Everything it returns is also
 reachable through the submodules, for callers who want to drive the pieces
-themselves: ``pattern`` (domain), ``examples`` (data), ``metrics`` (measurement),
-``embedding`` (solver), ``display`` (presentation).
+themselves.
 """
 
 from dataclasses import dataclass, field, replace
@@ -20,7 +19,7 @@ __all__ = ["Solution", "certify", "solve"]
 
 @dataclass
 class Solution:
-    """A solved and certified pattern: the package's single result type.
+    """A solved and certified pattern.
 
     ``graph.positions`` is already set, so the graph is ready for
     :mod:`crochetsim.display` or further measurement.
@@ -93,24 +92,18 @@ def solve(
 ) -> Solution:
     """Validate, embed and certify a pattern.
 
-    Parameters
-    ----------
-    pattern:
-        Pattern text, or an already-parsed :class:`~crochetsim.pattern.Pattern`.
-        Invalid patterns are refused before any solving happens.
-    config, seed:
-        Solver knobs.  ``seed`` overrides ``config.seed``, and is the *first* of
-        the ``tries`` seeds tried.
-    optimiser:
-        Supply your own multi-seed strategy; it wins over ``config`` and ``seed``.
-    tries:
-        How many seeds to try, keeping the cleanest embedding.  Each try is a full
-        solve, so ``tries=1`` is the fast, single-shot path.
+    Args:
+        pattern: Pattern text, or an already-parsed
+            :class:`~crochetsim.pattern.Pattern`.  Invalid patterns are refused
+            before any solving happens.
+        config: Solver knobs.
+        optimiser: Multi-seed strategy; wins over ``config`` and ``seed``.
+        seed: Overrides ``config.seed``, and is the first of the ``tries`` seeds.
+        tries: How many seeds to try, keeping the cleanest embedding.  Each try is
+            a full solve, so ``tries=1`` is the fast, single-shot path.
 
-    Returns
-    -------
-    Solution
-        With positions already assigned to ``solution.graph``.
+    Returns:
+        A :class:`Solution` with positions assigned to ``solution.graph``.
     """
     if isinstance(pattern, str):
         pattern = Pattern.from_text(pattern)

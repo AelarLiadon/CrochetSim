@@ -6,10 +6,10 @@
     solution.certificate.is_clean()
     solution.save_html("hyperbolic.html")     # needs crochetsim[view]
 
-Importing this package never imports matplotlib or plotly; the presentation layer
-is pulled in only when something is actually drawn, so a core install works
-headless.  Renderers, ``Camera`` and ``Pipeline`` are deliberately *not* re-exported
-here: reach them through :mod:`crochetsim.display`.
+Importing this package never imports matplotlib or plotly: the presentation layer
+is pulled in only when something is drawn, so a core install works headless.
+Renderers and ``Camera`` are not re-exported here; reach them through
+:mod:`crochetsim.display`.
 """
 
 from . import examples

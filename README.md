@@ -1,18 +1,18 @@
 # crochetsim
 
-Turn written crochet patterns into graphs, then embed those graphs in 3D so that
-every stitch-to-stitch edge has length exactly 1 - the geometric model of real
-crocheted fabric, where each stitch is a fixed-length loop joined to its
-neighbours.
+Crochet fabric simulator, turning written crochet patterns into 3d meshes.
+Currently supports sc, inc, and dec stitches in rounds.
+More features and stitch types will be added in future versions.
 
-## Install
+
+## Installation
 
 ```
 pip install crochetsim            # library only; no GUI dependencies
 pip install 'crochetsim[view]'    # adds matplotlib and plotly for rendering
 ```
 
-## Quick start
+## Getting Started
 
 ```python
 import crochetsim as cs
@@ -25,50 +25,16 @@ solution.save_html("hyperbolic.html")  # needs crochetsim[view]
 solution.show()                        # pannable, zoomable model in a browser
 ```
 
-`solve` validates the pattern, embeds it, certifies the result and assigns the
-coordinates to `solution.graph`. It refuses an invalid pattern before any solving
-happens. Each try is a full solve, so use `tries=1` for the fast single-shot path
-(the default tries several seeds and keeps the cleanest embedding).
-
-Drive the pieces yourself when you want to:
-
+The library can also be used piecewise if preferred, or if you're looking to extend functionality.
 ```python
 from crochetsim import Certifier, Pattern, UnitEdgeSolver
 from crochetsim.display import Camera, Viewer
 
 graph = Pattern.from_text(my_pattern).to_graph()
-graph.positions = UnitEdgeSolver().solve(graph).x   # solver returns, caller assigns
+graph.positions = UnitEdgeSolver().solve(graph).x
 print(Certifier().certify(graph).describe())
 Viewer().save_png(graph, "renders/model.png", camera=Camera.FRONT, mark_close=0.8)
 ```
-
-## Layout
-
-Five modules plus a facade, one responsibility each. Dependencies run one way:
-`api -> display -> metrics -> pattern`. `pattern` and `_errors` are leaves.
-
-| module | role |
-|---|---|
-| `crochetsim.pattern` | **domain**: stitches, rows, patterns, and the stitch graph they produce |
-| `crochetsim.examples` | **data**: the built-in pattern texts and the hyperbolic/circle generators |
-| `crochetsim.metrics` | **measurement**: given coordinates, report exactness, self-intersection, curvature |
-| `crochetsim.embedding` | **solver**: find coordinates where every edge has length 1 |
-| `crochetsim.display` | **presentation**: PNGs, an interactive window, a pannable plotly model |
-| `crochetsim.api` | **facade**: `Solution`, `solve`, `certify` |
-
-Three rules hold this together, and the test suite enforces them: `pattern.py`
-imports nothing project-local; the solver never explains its own correctness
-(`metrics` measures, `embedding` only solves); and nothing below `display` draws,
-so importing `crochetsim` never imports matplotlib or plotly.
-
-## Documentation
-
-- [The solver](docs/explanation/solver.md) - how unit-edge embedding works, and why
-  the shape prior is load-bearing.
-- [Certifying an embedding](docs/explanation/geometry.md) - the min-gap certificate,
-  face extraction, and two traps.
-- [Growth rate and over-density](docs/explanation/growth-limit.md) - why some
-  patterns cannot be embedded cleanly.
 
 ## Development
 
@@ -76,10 +42,3 @@ so importing `crochetsim` never imports matplotlib or plotly.
 uv sync --extra dev
 uv run pytest
 ```
-
-## Status
-
-0.1.0 is library-only; the command line interface lands in 0.2.0.
-
-Licensed under the GNU Affero General Public License, version 3 or later - see
-[LICENSE](LICENSE).

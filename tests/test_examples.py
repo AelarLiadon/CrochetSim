@@ -6,7 +6,7 @@ from crochetsim.pattern import Pattern
 
 
 def test_circle_is_exported():
-    """circle is a public generator like hyperbolic, so it belongs in __all__."""
+    """``circle`` is a public generator, like ``hyperbolic``."""
     assert "circle" in examples.__all__
     assert callable(examples.circle)
     assert circle is examples.circle
@@ -21,7 +21,7 @@ def test_circle_generates_a_valid_growing_circle():
 
 
 def test_hyperbolic_grows_by_the_step():
-    """The 'step - 1' is load-bearing: the naive form tangles the graph."""
+    """Each row stays valid, so the ``step - 1`` filler stitches are required."""
     pattern = Pattern.from_text(hyperbolic(n_rows=5, start=20, step=4), name="hyp")
     assert pattern.validate().ok
     assert pattern.row_lengths() == [20, 25, 31, 38, 47]
