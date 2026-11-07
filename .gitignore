@@ -14,6 +14,11 @@ scratch/
 renders/
 site/
 
+# The generated demo page and its assets; demo.js beside them is hand-written.
+docs/demo/index.md
+docs/demo/figures.js
+docs/demo/plotly.min.js
+
 # 3D model files
 *.stl
 *.obj

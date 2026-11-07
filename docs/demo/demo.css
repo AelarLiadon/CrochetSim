@@ -1,0 +1,20 @@
+/* Stats table under each model on the demo page.
+ *
+ * Material sizes table cells for prose - .9375em 1.25em of padding and a 5rem
+ * minimum column width - which leaves a grid of seven numbers airy and pushes
+ * it into a horizontal scroll.  Only docs/demo/index.md loads this file, so the
+ * prose tables on the explanation pages keep the theme's own spacing.
+ */
+
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  padding: 0.35rem 0.55rem;
+}
+
+.md-typeset table:not([class]) th {
+  min-width: 0;
+}
+
+.md-typeset table:not([class]) + * {
+  margin-top: 0.8em;
+}

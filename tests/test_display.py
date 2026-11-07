@@ -8,9 +8,11 @@ from crochetsim.display import (
     Camera,
     EqualAxes,
     MatplotlibBackend,
+    RenderStyle,
     SceneModel,
     Viewer,
     _unique_temp_path,
+    theme_layout,
 )
 from crochetsim.embedding import UnitEdgeSolver
 from crochetsim.examples import by_key
@@ -160,3 +162,46 @@ def test_html_is_self_contained_and_keeps_the_payload(solved, tmp_path):
     assert f"{solved.n} stitches" in text  # the node trace is present
     # Per-node hover text; plotly escapes '<' as \u003c inside the JSON payload.
     assert r"stitch 0\u003cbr\u003eradius" in text
+
+
+# ---------------------------------------------------------------------------
+# colour schemes
+# ---------------------------------------------------------------------------
+def test_a_render_style_carries_a_whole_colour_scheme(solved):
+    style = RenderStyle(
+        background="#ffffff",
+        axis_background="#eeeeee",
+        axis_grid="#cccccc",
+        font_color="#111111",
+        legend_background="rgba(255,255,255,0.5)",
+    )
+
+    layout = Viewer().html.figure(SceneModel.from_graph(solved), style=style).layout
+
+    assert layout.paper_bgcolor == "#ffffff"
+    assert layout.font.color == "#111111"
+    assert layout.legend.bgcolor == "rgba(255,255,255,0.5)"
+    for axis in (layout.scene.xaxis, layout.scene.yaxis, layout.scene.zaxis):
+        assert axis.backgroundcolor == "#eeeeee"
+        assert axis.gridcolor == "#cccccc"
+        assert axis.zerolinecolor == "#cccccc"
+
+
+def test_the_light_preset_is_not_the_dark_one():
+    assert RenderStyle.LIGHT != RenderStyle.DARK
+    assert RenderStyle() == RenderStyle.DARK  # the defaults are still the dark scheme
+    assert RenderStyle.LIGHT.font_color != RenderStyle.DARK.font_color
+    assert RenderStyle.LIGHT.axis_background != RenderStyle.DARK.axis_background
+
+
+def test_theme_layout_recolours_a_figure_without_touching_its_traces(solved):
+    viewer = Viewer()
+    figure = viewer.html.figure(SceneModel.from_graph(solved), style=RenderStyle.DARK)
+    traces = [trace.name for trace in figure.data]
+
+    figure.update_layout(theme_layout(RenderStyle.LIGHT))
+
+    assert figure.layout.paper_bgcolor == RenderStyle.LIGHT.background
+    assert figure.layout.font.color == RenderStyle.LIGHT.font_color
+    assert figure.layout.scene.zaxis.gridcolor == RenderStyle.LIGHT.axis_grid
+    assert [trace.name for trace in figure.data] == traces

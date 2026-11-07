@@ -31,6 +31,7 @@ __all__ = [
     "SceneModel",
     "Viewer",
     "WindowRenderer",
+    "theme_layout",
 ]
 
 
@@ -71,7 +72,13 @@ Camera.SIDE = Camera(66.0, 140.0)
 
 @dataclass(frozen=True)
 class RenderStyle:
-    """Appearance knobs shared by every renderer."""
+    """Appearance knobs shared by every renderer.
+
+    The colour fields describe the whole figure rather than just its paper: the
+    background, the scene's axis planes and grid, the text and the legend chip.
+    Together they carry enough to draw against either colour scheme, which is
+    what :data:`RenderStyle.LIGHT` and :data:`RenderStyle.DARK` are for.
+    """
 
     figsize: tuple = (6.2, 6.2)
     linewidth: float = 0.6
@@ -81,6 +88,50 @@ class RenderStyle:
     edge_color: str = "#8a94a6"
     overlap_color: str = "#ff2d2d"
     background: str = "#0b0d10"
+    axis_background: str = "#101216"
+    axis_grid: str = "#2a2f38"
+    font_color: str = "#c9d1d9"
+    legend_background: str = "rgba(0,0,0,0.5)"
+
+
+# Filled in below the class body, like Camera.FRONT and Camera.SIDE.
+RenderStyle.DARK = RenderStyle()
+RenderStyle.LIGHT = RenderStyle(
+    background="#ffffff",
+    axis_background="#f2f4f7",
+    axis_grid="#d5dae1",
+    font_color="#1f2430",
+    legend_background="rgba(255,255,255,0.65)",
+)
+
+
+def _theme_axis(style: RenderStyle) -> dict:
+    """The plotly scene is styled axis by axis, so each axis needs its own copy."""
+    return {
+        "showbackground": True,
+        "backgroundcolor": style.axis_background,
+        "gridcolor": style.axis_grid,
+        "zerolinecolor": style.axis_grid,
+        "showticklabels": False,
+        "title": "",
+    }
+
+
+def theme_layout(style: RenderStyle) -> dict:
+    """The colour-carrying part of a plotly layout, nested for ``update_layout``.
+
+    Hand this to :meth:`plotly.graph_objects.Figure.update_layout` to recolour a
+    figure that already exists, which restyles a model without rebuilding its
+    traces::
+
+        figure.update_layout(theme_layout(RenderStyle.LIGHT))
+    """
+    return {
+        "paper_bgcolor": style.background,
+        "font": {"color": style.font_color},
+        "legend": {"bgcolor": style.legend_background},
+        "scene": {axis: _theme_axis(style) for axis in ("xaxis", "yaxis", "zaxis")},
+    }
 
 
 @dataclass(frozen=True)
@@ -551,31 +602,18 @@ class HtmlRenderer(Renderer):
             )
         )
 
-        axis = {
-            "showbackground": True,
-            "backgroundcolor": "#101216",
-            "gridcolor": "#2a2f38",
-            "zerolinecolor": "#2a2f38",
-            "showticklabels": False,
-            "title": "",
+        layout = theme_layout(style)
+        layout["scene"] |= {"aspectmode": "data", "camera": {"eye": camera.eye()}}
+        layout["font"] |= {"size": 11}
+        layout["legend"] |= {"x": 0.01, "y": 0.01, "font": {"size": 10}}
+        layout |= {
+            "title": {"text": scene.title, "x": 0.01, "y": 0.97, "font": {"size": 13}},
+            "margin": {"l": 0, "r": 0, "t": 52, "b": 0},
+            "width": self.width,
+            "height": self.height,
         }
         fig = go.Figure(data=traces)
-        fig.update_layout(
-            title={"text": scene.title, "x": 0.01, "y": 0.97, "font": {"size": 13}},
-            scene={
-                "xaxis": axis,
-                "yaxis": axis,
-                "zaxis": axis,
-                "aspectmode": "data",
-                "camera": {"eye": camera.eye()},
-            },
-            paper_bgcolor=style.background,
-            font={"color": "#c9d1d9", "size": 11},
-            legend={"x": 0.01, "y": 0.01, "bgcolor": "rgba(0,0,0,0.5)", "font": {"size": 10}},
-            margin={"l": 0, "r": 0, "t": 52, "b": 0},
-            width=self.width,
-            height=self.height,
-        )
+        fig.update_layout(layout)
         return fig
 
 

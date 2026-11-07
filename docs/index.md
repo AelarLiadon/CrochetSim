@@ -1,9 +1,10 @@
-# crochetsim
+# CrochetSim
 
-Turn written crochet patterns into graphs, then embed those graphs in 3D so that
-every stitch-to-stitch edge has length exactly 1 - the geometric model of real
-crocheted fabric, where each stitch is a fixed-length loop joined to its
-neighbours.
+Crochet fabric simulator, turning written crochet patterns into 3d meshes.
+
+Currently supports sc, inc, and dec stitches in rounds.
+
+More features and stitch types will be added in future versions.
 
 ## Install
 
@@ -12,7 +13,7 @@ pip install crochetsim            # library only; no GUI dependencies
 pip install 'crochetsim[view]'    # adds matplotlib and plotly for rendering
 ```
 
-## Quick start
+## Getting Started
 
 ```python
 import crochetsim as cs
@@ -26,10 +27,20 @@ solution.show()                        # pannable, zoomable model in a browser
 ```
 
 `solve` validates the pattern, embeds it, certifies the result and assigns the
-coordinates to `solution.graph`. It refuses an invalid pattern before any solving
-happens. Each try is a full solve, so use `tries=1` for the fast single-shot path;
+coordinates to `solution.graph`. 
+Each try is a full solve, so use `tries=1` for the fast single-shot path;
 the default tries several seeds and keeps the cleanest embedding.
 
+## Live demo
+
+[**Interactive demo**](demo/index.md) - example patterns, each with a pannable
+3D model, its written pattern, and corresponding code.
+
+Red edges mark non-adjacent stitch pairs that come closer than 0.8, and as such
+can't cleanly embed.
+
+
+<!-- 
 ## Where to go next
 
 - [The solver](explanation/solver.md) - how unit-edge embedding works, and why the
@@ -38,4 +49,4 @@ the default tries several seeds and keeps the cleanest embedding.
   graded verdicts, and two traps.
 - [Growth rate and over-density](explanation/growth-limit.md) - why some patterns
   cannot be embedded cleanly, and what that says about the pattern.
-- [API reference](reference/api.md) - every public name.
+- [API reference](reference/api.md) - every public name. -->

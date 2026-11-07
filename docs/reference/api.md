@@ -9,13 +9,12 @@ import crochetsim as cs
 cs.solve, cs.Certifier, cs.Pattern, cs.UnitEdgeSolver, cs.examples
 ```
 
-Renderers, `Camera` and the render styles are deliberately *not* re-exported:
-reach them through `crochetsim.display`, which keeps importing the package free of
-matplotlib and plotly.
+Renderers, `Camera` and the render styles are deliberately *not* re-exported to allow
+for a solver-only installation. Reach them through `crochetsim.display`.
 
 ## Facade
 
-The one-call path: pattern text in, positioned certified model out.
+The full pipeline: pattern text in, positioned certified model out.
 
 ::: crochetsim.api
 
@@ -33,15 +32,13 @@ The built-in pattern texts and the generators.
 
 ## Measurement
 
-Given coordinates, report exactness, self-intersection and curvature. Never
-solves.
+Given coordinates, report exactness, self-intersection and curvature.
 
 ::: crochetsim.metrics
 
 ## Solver
 
-Find coordinates where every edge has length 1. Never measures its own
-correctness.
+Solves 3D embeddings of the stitch graphs.
 
 ::: crochetsim.embedding
 
@@ -54,6 +51,6 @@ Imports matplotlib and plotly lazily, so anything else can be used headless.
 
 ## Errors
 
-Every error this package raises deliberately.
+Custom errors raised by this package.
 
 ::: crochetsim._errors

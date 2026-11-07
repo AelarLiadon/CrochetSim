@@ -1,4 +1,5 @@
 site_name: crochetsim
+site_url: https://aelarliadon.github.io/CrochetSim/
 site_description: >-
   Represent crochet patterns as graphs and embed them in 3D as unit-edge meshes.
 repo_url: https://github.com/AelarLiadon/CrochetSim
@@ -6,6 +7,19 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  # Both schemes, so the demo models can follow the toggle: demo.js watches the
+  # data-md-color-scheme attribute this adds to <body> and restyles the plots.
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   features:
     - navigation.sections
     - navigation.top
@@ -14,10 +28,11 @@ theme:
 
 nav:
   - Home: index.md
-  - Explanation:
-      - The solver: explanation/solver.md
-      - Certifying an embedding: explanation/geometry.md
-      - Growth rate and over-density: explanation/growth-limit.md
+  - Live demo: demo/index.md
+  # - Explanation:
+  #     - The solver: explanation/solver.md
+  #     - Certifying an embedding: explanation/geometry.md
+  #     - Growth rate and over-density: explanation/growth-limit.md
   - Reference: reference/api.md
 
 plugins:
@@ -36,9 +51,15 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - pymdownx.details
+  # superfences is what lets a fenced block sit inside a '???' collapsible; the
+  # built-in fenced_code only matches fences indented by up to three spaces.
+  - pymdownx.superfences
   - tables
   - toc:
       permalink: true
 
+# The demo page is generated rather than committed; see scripts/build_demo.py.
+# Zensical ignores `watch`, MkDocs does not.
 watch:
   - src/crochetsim
