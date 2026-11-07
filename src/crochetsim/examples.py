@@ -1,10 +1,22 @@
-"""Built-in example patterns, plus generators for hyperbolic and circular ones."""
+"""Built-in example patterns, plus generators for hyperbolic, circular and
+axisymmetric ones."""
 
 from dataclasses import dataclass
 
 from ._errors import UnknownExampleError
 
-__all__ = ["CATALOGUE", "ExamplePattern", "by_key", "circle", "hyperbolic", "keys"]
+__all__ = [
+    "CATALOGUE",
+    "ExamplePattern",
+    "ball",
+    "ball_even",
+    "bowl",
+    "by_key",
+    "circle",
+    "hyperbolic",
+    "keys",
+    "tube",
+]
 
 strPattern = """
 Row   0 [ 10 st]:  10 sc
@@ -182,6 +194,116 @@ def circle(n_rows: int = 15) -> str:
     return "\n".join(rows) + "\n"
 
 
+def _runs(tokens: list[str]) -> str:
+    """Collapse repeats, so a row reads ``3 sc, inc`` rather than ``sc, sc, sc, inc``."""
+    encoded: list[tuple[str, int]] = []
+    for token in tokens:
+        if encoded and encoded[-1][0] == token:
+            encoded[-1] = (token, encoded[-1][1] + 1)
+        else:
+            encoded.append((token, 1))
+    return ", ".join(token if count == 1 else f"{count} {token}" for token, count in encoded)
+
+
+def _row(previous: int, target: int) -> str:
+    """One row of ``target`` stitches worked into ``previous`` stitches below.
+
+    Increases are spread as evenly as the counts allow.  Decreases keep at
+    least one stitch between them, so no stitch is worked into twice.
+    """
+    if target == previous:
+        return _runs(["sc"] * previous)
+
+    if target > previous:
+        added = target - previous
+        marks = sorted({(index * previous) // added for index in range(added)})
+        if len(marks) != added:
+            raise ValueError(f"cannot spread {added} increases over {previous} stitches")
+        return _runs(["inc" if index in marks else "sc" for index in range(previous)])
+
+    removed = previous - target
+    positions: list[int] = []
+    for step in range(removed):
+        position = round(step * previous / removed)
+        positions.append(max(position, positions[-1] + 2 if positions else 0))
+    if positions[-1] + 1 >= previous:
+        raise ValueError(f"cannot fit {removed} decreases into {previous} stitches")
+    marks = set(positions)
+    tokens: list[str] = []
+    index = 0
+    while index < previous:
+        if index in marks:
+            tokens.append("dec")
+            index += 2
+        else:
+            tokens.append("sc")
+            index += 1
+    return _runs(tokens)
+
+
+def _from_profile(profile: list[int]) -> str:
+    """A pattern with one row per entry of ``profile``, starting from a flat ring."""
+    rows = [f"Row   0 [{profile[0]:3d} st]:  {profile[0]} sc"]
+    for index in range(1, len(profile)):
+        target = profile[index]
+        rows.append(f"Row {index:3d} [{target:3d} st]:  {_row(profile[index - 1], target)}")
+    return "\n".join(rows) + "\n"
+
+
+def tube(n_rows: int = 10, stitches: int = 12) -> str:
+    """Generate a tube of constant circumference: no increases.
+
+    Args:
+        n_rows: Number of rows.
+        stitches: Stitches in every row.
+    """
+    return _from_profile([stitches] * n_rows)
+
+
+def bowl(increase_rows: int = 6, start: int = 6, step: int = 6, wall_rows: int = 5) -> str:
+    """Generate a bowl: a flat base that grows by ``step`` a row, then straight walls.
+
+    Args:
+        increase_rows: Rows spent flaring the base, including the first row.
+        start: Stitches in the first row.
+        step: Stitches added per base row.
+        wall_rows: Straight rows worked after the base.
+    """
+    base = [start + step * row for row in range(increase_rows)]
+    return _from_profile(base + [base[-1]] * wall_rows)
+
+
+def ball(rounds: int = 6, start: int = 6, step: int = 6) -> str:
+    """Generate a closed sphere the textbook way: grow by ``step`` a row up to the
+    equator, then mirror the rows back down.
+
+    Args:
+        rounds: Increase rows, including the first row and the equator.
+        start: Stitches in the first row.
+        step: Stitches added per increase row.
+    """
+    up = [start + step * row for row in range(rounds)]
+    return _from_profile(up + up[-2::-1])
+
+
+def ball_even(steps: int = 5, start: int = 8, step: int = 8) -> str:
+    """Generate a sphere that follows each increase row with a plain one.
+
+    This is how designers avoid the hexagonal bulge the textbook formula leaves,
+    so it makes a better looking piece of fabric - but the extra rows pack more
+    stitches into the same surface, which is where the growth limit hits.
+
+    Args:
+        steps: Increase rows, including the first row and the equator.
+        start: Stitches in the first row.
+        step: Stitches added per increase row.
+    """
+    up = [start]
+    for index in range(1, steps):
+        up += [start + step * index] * 2
+    return _from_profile(up + up[:-2][::-1])
+
+
 @dataclass(frozen=True)
 class ExamplePattern:
     """One entry of :data:`CATALOGUE`."""
@@ -208,6 +330,15 @@ CATALOGUE: list[ExamplePattern] = [
         hyperbolic(),
     ),
     ExamplePattern("circle", "circle(15)", "circular pattern, 15 rows", circle()),
+    ExamplePattern("tube", "tube()", "tube, constant 12 around, 10 rows", tube()),
+    ExamplePattern("bowl", "bowl()", "bowl, flat base then straight walls, 11 rows", bowl()),
+    ExamplePattern("ball", "ball()", "textbook sphere, +6 a round, 11 rows", ball()),
+    ExamplePattern(
+        "ball-even",
+        "ball_even()",
+        "sphere with a plain round after each increase, 16 rows",
+        ball_even(),
+    ),
 ]
 
 
