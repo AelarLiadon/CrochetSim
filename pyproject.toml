@@ -49,7 +49,10 @@ docs = [
 ]
 all = ["crochetsim[view,dev,docs]"]
 
-# [project.urls] - add the real repository URL before publishing.
+[project.urls]
+Homepage = "https://github.com/AelarLiadon/CrochetSim"
+Repository = "https://github.com/AelarLiadon/CrochetSim"
+Issues = "https://github.com/AelarLiadon/CrochetSim/issues"
 
 [tool.hatch.version]
 path = "src/crochetsim/__init__.py"
@@ -79,41 +82,21 @@ files = ["src/crochetsim"]
 ignore_missing_imports = true
 warn_unused_ignores = true
 
+
+# Import linting contracts to enforce architecture choices
+
 [tool.importlinter]
 root_packages = ["crochetsim"]
 
-# The layering rules from REFACTOR.md, as executable contracts.
-# "Nothing below display draws" cannot be expressed here; it is a runtime
-# property, tested in tests/test_api.py.
-
 [[tool.importlinter.contracts]]
-name = "errors is a leaf"
-type = "forbidden"
-source_modules = ["crochetsim._errors"]
-forbidden_modules = ["crochetsim.pattern", "crochetsim.metrics", "crochetsim.embedding",
-                     "crochetsim.display", "crochetsim.api", "crochetsim.examples"]
-
-[[tool.importlinter.contracts]]
-name = "pattern is a leaf"
-type = "forbidden"
-source_modules = ["crochetsim.pattern"]
-forbidden_modules = ["crochetsim.metrics", "crochetsim.embedding", "crochetsim.display",
-                     "crochetsim.api", "crochetsim.examples"]
-
-[[tool.importlinter.contracts]]
-name = "the solver does not draw"
-type = "forbidden"
-source_modules = ["crochetsim.embedding"]
-forbidden_modules = ["crochetsim.display"]
-
-[[tool.importlinter.contracts]]
-name = "measurement does not solve or draw"
-type = "forbidden"
-source_modules = ["crochetsim.metrics"]
-forbidden_modules = ["crochetsim.embedding", "crochetsim.display"]
-
-[[tool.importlinter.contracts]]
-name = "the renderer does not solve"
-type = "forbidden"
-source_modules = ["crochetsim.display"]
-forbidden_modules = ["crochetsim.embedding"]
+name = "crochetsim layers"
+type = "layers"
+# a layer may import the ones below it, never above.
+# "a | b: modules on the same layer are mutually independent.
+layers = [
+    "crochetsim.api",
+    "crochetsim.display | crochetsim.embedding",
+    "crochetsim.metrics",
+    "crochetsim.pattern | crochetsim.examples",
+    "crochetsim._errors",
+]
