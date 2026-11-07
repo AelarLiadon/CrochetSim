@@ -90,8 +90,9 @@ root_packages = ["crochetsim"]
 
 [[tool.importlinter.contracts]]
 name = "crochetsim layers"
+id = "crochetsim-layers"
 type = "layers"
-# a layer may import the ones below it, never above.
+# a layer may import the ones below it, but not above.
 # "a | b: modules on the same layer are mutually independent.
 layers = [
     "crochetsim.api",

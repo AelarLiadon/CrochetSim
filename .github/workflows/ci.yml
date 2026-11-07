@@ -26,7 +26,9 @@ jobs:
       - name: Lint
         run: uv run ruff check src tests
       - name: Layering contracts
-        run: uv run lint-imports --no-cache --no-logo
+        # Naming the contract means that renaming or deleted it fails the run.
+        # Rather than passing a vacuous test.
+        run: uv run lint-imports --contract crochetsim-layers --no-cache --no-logo
       - name: Test
         run: uv run pytest -q
       - name: Build
