@@ -1,4 +1,4 @@
-"""Represent crochet patterns as graphs and embed them in 3D as unit-edge meshes.
+"""Represent crochet patterns as graphs and embed them in 3D space.
 
     import crochetsim as cs
 

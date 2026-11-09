@@ -1,6 +1,6 @@
-# crochetsim
+# CrochetSim
 
-Crochet fabric simulator, turning written crochet patterns into 3d meshes.
+Crochet fabric simulator, turning written crochet patterns into 3D meshes.
 Currently supports sc, inc, and dec stitches in rounds.
 More features and stitch types will be added in future versions.
 
@@ -53,4 +53,10 @@ Build the interactive demo page + docs :
 uv run python scripts/build_demo.py
 
 uv run mkdocs build --strict
+```
+
+Or a single self-contained HTML file, which needs no server:
+
+```
+uv run python scripts/build_standalone.py --out demo.html
 ```

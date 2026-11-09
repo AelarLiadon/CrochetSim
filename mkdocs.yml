@@ -1,7 +1,7 @@
-site_name: crochetsim
+site_name: CrochetSim
 site_url: https://aelarliadon.github.io/CrochetSim/
 site_description: >-
-  Represent crochet patterns as graphs and embed them in 3D as unit-edge meshes.
+  Documentation for CrochetSim: Simulate crochet patterns in 3D space.
 repo_url: https://github.com/AelarLiadon/CrochetSim
 edit_uri: edit/main/docs/
 
